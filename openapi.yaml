@@ -3,7 +3,7 @@ info:
   title: Obsidian Vault REST API
   version: 1.0.0
 servers:
-  - url: http://localhost:8000/api
+  - url: http://prj-obsidian-local-rest-api.test/api
 paths:
   /files/tree:
     get:
