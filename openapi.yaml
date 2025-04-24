@@ -1,0 +1,312 @@
+openapi: 3.1.0
+info:
+  title: Obsidian Vault REST API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000/api
+paths:
+  /files/tree:
+    get:
+      summary: Get hierarchical tree of vault files and directories
+      responses:
+        '200':
+          description: Tree structure
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TreeNode'
+  /files:
+    get:
+      summary: List all files in the vault
+      responses:
+        '200':
+          description: List of file paths
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+  /files/raw:
+    get:
+      summary: Retrieve raw content of a file
+      parameters:
+        - in: query
+          name: path
+          schema:
+            type: string
+          required: true
+          description: Vault-relative path to file
+      responses:
+        '200':
+          description: Raw file content
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /notes:
+    get:
+      summary: List all markdown notes with parsed front matter
+      responses:
+        '200':
+          description: List of notes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Note'
+    post:
+      summary: Create a new note
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoteInput'
+      responses:
+        '201':
+          description: Note created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  /notes/search:
+    get:
+      summary: Search notes by front matter
+      parameters:
+        - in: query
+          name: field
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: value
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Matching notes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NoteSummary'
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /notes/{path}:
+    get:
+      summary: Retrieve a single note
+      parameters:
+        - in: path
+          name: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Note object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+        '404':
+          description: Note not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: Replace a note
+      parameters:
+        - in: path
+          name: path
+          schema: { type: string }
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NoteInput' }
+      responses:
+        '200':
+          description: Note replaced
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+        '404':
+          description: Note not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+    patch:
+      summary: Update parts of a note
+      parameters:
+        - in: path
+          name: path
+          schema: { type: string }
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                front_matter:
+                  type: object
+                content:
+                  type: string
+      responses:
+        '200':
+          description: Note updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+        '404':
+          description: Note not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+    delete:
+      summary: Delete a note
+      parameters:
+        - in: path
+          name: path
+          schema: { type: string }
+          required: true
+      responses:
+        '200':
+          description: Note deleted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+        '404':
+          description: Note not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /notes/bulk-delete:
+    post:
+      summary: Delete multiple notes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                paths:
+                  type: array
+                  items: { type: string }
+      responses:
+        '200':
+          description: Bulk delete result
+          content:
+            application/json:
+              schema: { type: object }
+  /notes/bulk-update:
+    post:
+      summary: Update multiple notes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/NoteUpdate'
+      responses:
+        '200':
+          description: Bulk update result
+          content:
+            application/json:
+              schema: { type: object }
+  /front-matter/keys:
+    get:
+      summary: List all front matter keys
+      responses:
+        '200':
+          description: Keys list
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: string }
+  /front-matter/values/{key}:
+    get:
+      summary: List unique values for a front matter key
+      parameters:
+        - in: path
+          name: key
+          schema: { type: string }
+          required: true
+      responses:
+        '200':
+          description: Values list
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+components:
+  schemas:
+    TreeNode:
+      type: object
+      properties:
+        name: { type: string }
+        type: { type: string }
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/TreeNode'
+    Note:
+      type: object
+      properties:
+        path: { type: string }
+        front_matter: { type: object }
+        content: { type: string }
+    NoteSummary:
+      type: object
+      properties:
+        path: { type: string }
+        front_matter: { type: object }
+    NoteInput:
+      type: object
+      required: [path]
+      properties:
+        path: { type: string }
+        front_matter: { type: object }
+        content: { type: string }
+    NoteUpdate:
+      type: object
+      required: [path]
+      properties:
+        path: { type: string }
+        front_matter: { type: object }
+        content: { type: string }
+    SuccessResponse:
+      type: object
+      properties:
+        message: { type: string }
+        path: { type: string }
+    ErrorResponse:
+      type: object
+      properties:
+        error: { type: string }
