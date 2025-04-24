@@ -30,6 +30,13 @@ return [
 
     'disks' => [
 
+        'vault' => [
+            'driver' => 'local',
+            'root' => env('OBSIDIAN_VAULT_PATH', storage_path('vault')),
+            'throw' => false,
+            'report' => false,
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
