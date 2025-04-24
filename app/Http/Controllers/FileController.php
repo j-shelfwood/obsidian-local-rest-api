@@ -2,68 +2,95 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Http\Requests\FileStoreRequest;
+use App\Http\Requests\FileUpdateRequest;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FileController extends Controller
 {
-    public function tree()
-    {
-        $paths = Storage::disk('vault')->allFiles();
-        $tree = $this->buildTree($paths);
-
-        return response()->json($tree);
-    }
-
-    protected function buildTree(array $paths): array
-    {
-        $tree = [];
-        foreach ($paths as $path) {
-            $parts = explode('/', $path);
-            $this->insertNode($tree, $parts);
-        }
-
-        return $tree;
-    }
-
-    protected function insertNode(array &$nodes, array $parts): void
-    {
-        $segment = array_shift($parts);
-        foreach ($nodes as &$node) {
-            if ($node['name'] === $segment) {
-                if ($parts) {
-                    $this->insertNode($node['children'], $parts);
-                }
-
-                return;
-            }
-        }
-        $newNode = [
-            'name' => $segment,
-            'type' => empty($parts) ? 'file' : 'directory',
-            'children' => [],
-        ];
-        if ($parts) {
-            $this->insertNode($newNode['children'], $parts);
-        }
-        $nodes[] = $newNode;
-    }
-
-    public function index()
+    /**
+     * Display a listing of the files.
+     */
+    public function index(): JsonResponse
     {
         $files = Storage::disk('vault')->allFiles();
 
         return response()->json($files);
     }
 
-    public function raw(Request $request)
+    /**
+     * Store a newly created file in storage.
+     */
+    public function store(FileStoreRequest $request): JsonResponse
     {
-        $path = $request->query('path');
-        if (! $path || ! Storage::disk('vault')->exists($path)) {
+        $validated = $request->validated();
+        $path = $validated['path'];
+        $content = $validated['content'];
+
+        if (Storage::disk('vault')->exists($path)) {
+            return response()->json(['error' => 'File already exists'], 409);
+        }
+
+        Storage::disk('vault')->put($path, $content);
+
+        return response()->json(['message' => 'File created successfully', 'path' => $path], 201);
+    }
+
+    /**
+     * Display the specified file.
+     */
+    public function show(string $path): Response|JsonResponse|StreamedResponse
+    {
+        // Decode the URL-encoded path
+        $decodedPath = urldecode($path);
+
+        if (! Storage::disk('vault')->exists($decodedPath)) {
             return response()->json(['error' => 'File not found'], 404);
         }
-        $content = Storage::disk('vault')->get($path);
 
-        return response($content, 200)->header('Content-Type', 'text/plain');
+        $content = Storage::disk('vault')->get($decodedPath);
+        // Use mime_content_type with the absolute path
+        $absolutePath = Storage::disk('vault')->path($decodedPath);
+        $mimeType = file_exists($absolutePath) ? mime_content_type($absolutePath) : null;
+
+        // Return raw content with appropriate mime type
+        return response($content, 200)->header('Content-Type', $mimeType ?: 'text/plain');
+    }
+
+    /**
+     * Update the specified file in storage.
+     */
+    public function update(FileUpdateRequest $request, string $path): JsonResponse
+    {
+        $validated = $request->validated();
+        $content = $validated['content'];
+        $decodedPath = urldecode($path);
+
+        if (! Storage::disk('vault')->exists($decodedPath)) {
+            return response()->json(['error' => 'File not found'], 404);
+        }
+
+        Storage::disk('vault')->put($decodedPath, $content);
+
+        return response()->json(['message' => 'File updated successfully', 'path' => $decodedPath]);
+    }
+
+    /**
+     * Remove the specified file from storage.
+     */
+    public function destroy(string $path): JsonResponse
+    {
+        $decodedPath = urldecode($path);
+
+        if (! Storage::disk('vault')->exists($decodedPath)) {
+            return response()->json(['error' => 'File not found'], 404);
+        }
+
+        Storage::disk('vault')->delete($decodedPath);
+
+        return response()->json(['message' => 'File deleted successfully']);
     }
 }

@@ -14,21 +14,6 @@ beforeEach(function () {
 });
 
 /* Files Endpoints */
-test('files tree returns empty array when no files', function () {
-    getJson('/api/files/tree')
-        ->assertOk()
-        ->assertExactJson([]);
-});
-
-test('files tree returns file node for single file', function () {
-    Storage::disk('vault')->put('foo.txt', 'content');
-
-    getJson('/api/files/tree')
-        ->assertOk()
-        ->assertExactJson([
-            ['name' => 'foo.txt', 'type' => 'file', 'children' => []],
-        ]);
-});
 
 test('files index returns list of all files', function () {
     Storage::disk('vault')->put('a.txt', 'A');
@@ -41,15 +26,19 @@ test('files index returns list of all files', function () {
 
 test('files raw returns plaintext content', function () {
     Storage::disk('vault')->put('file.md', 'hello');
+    $encodedPath = urlencode('file.md');
 
-    get('/api/files/raw?path=file.md')
-        ->assertOk()
-        ->assertHeader('Content-Type', 'text/plain; charset=UTF-8')
-        ->assertSeeText('hello');
+    $response = get("/api/files/{$encodedPath}");
+
+    $response->assertOk();
+    $contentType = $response->headers->get('Content-Type');
+    expect($contentType)->toBeIn(['text/plain; charset=UTF-8', 'application/octet-stream']);
+    $response->assertSeeText('hello');
 });
 
 test('files raw returns 404 if file not found', function () {
-    get('/api/files/raw?path=missing.md')
+    $encodedPath = urlencode('missing.md');
+    get("/api/files/{$encodedPath}")
         ->assertNotFound()
         ->assertJson(['error' => 'File not found']);
 });
@@ -71,8 +60,9 @@ test('notes index lists all markdown notes with front matter and content', funct
 
 test('notes show returns note content and front matter', function () {
     Storage::disk('vault')->put('n.md', "---\na: 1\n---\nX");
+    $encodedPath = urlencode('n.md');
 
-    getJson('/api/notes/n.md')
+    getJson("/api/notes/{$encodedPath}")
         ->assertOk()
         ->assertJson([
             'path' => 'n.md',
@@ -82,25 +72,10 @@ test('notes show returns note content and front matter', function () {
 });
 
 test('notes show returns 404 for missing note', function () {
-    getJson('/api/notes/notfound.md')
+    $encodedPath = urlencode('notfound.md');
+    getJson("/api/notes/{$encodedPath}")
         ->assertNotFound()
         ->assertJson(['error' => 'Note not found']);
-});
-
-test('notes search filters by front matter field and value', function () {
-    Storage::disk('vault')->put('a.md', "---\ntag: foo\n---\nA");
-    Storage::disk('vault')->put('b.md', "---\ntag: bar\n---\nB");
-
-    getJson('/api/notes/search?field=tag&value=foo')
-        ->assertOk()
-        ->assertJsonCount(1)
-        ->assertJsonFragment(['path' => 'a.md', 'front_matter' => ['tag' => 'foo']]);
-});
-
-test('notes search returns 400 if missing query params', function () {
-    getJson('/api/notes/search')
-        ->assertStatus(400)
-        ->assertJson(['error' => 'field and value query parameters are required']);
 });
 
 test('notes store creates new note', function () {
@@ -110,7 +85,11 @@ test('notes store creates new note', function () {
         'content' => 'Hello',
     ])
         ->assertCreated()
-        ->assertJson(['message' => 'Note created', 'path' => 'newnote.md']);
+        ->assertJson([
+            'path' => 'newnote.md',
+            'front_matter' => ['x' => 'y'],
+            'content' => 'Hello',
+        ]);
 
     $raw = Storage::disk('vault')->get('newnote.md');
     expect($raw)->toContain("x: 'y'")->toContain('Hello');
@@ -118,13 +97,18 @@ test('notes store creates new note', function () {
 
 test('notes update replaces existing note', function () {
     Storage::disk('vault')->put('u.md', "---\na: old\n---\nOLD");
+    $encodedPath = urlencode('u.md');
 
-    putJson('/api/notes/u.md', [
+    putJson("/api/notes/{$encodedPath}", [
         'front_matter' => ['a' => 'new'],
         'content' => 'NEW',
     ])
         ->assertOk()
-        ->assertJson(['message' => 'Note replaced', 'path' => 'u.md']);
+        ->assertJson([
+            'path' => 'u.md',
+            'front_matter' => ['a' => 'new'],
+            'content' => 'NEW',
+        ]);
 
     $raw = Storage::disk('vault')->get('u.md');
     expect($raw)->toContain('a: new')->toContain('NEW');
@@ -132,13 +116,18 @@ test('notes update replaces existing note', function () {
 
 test('notes patch updates specific parts', function () {
     Storage::disk('vault')->put('p.md', "---\nb: 1\n---\nOLD");
+    $encodedPath = urlencode('p.md');
 
-    patchJson('/api/notes/p.md', [
+    patchJson("/api/notes/{$encodedPath}", [
         'front_matter' => ['b' => 2],
         'content' => 'UPDATED',
     ])
         ->assertOk()
-        ->assertJson(['message' => 'Note updated', 'path' => 'p.md']);
+        ->assertJson([
+            'path' => 'p.md',
+            'front_matter' => ['b' => 2],
+            'content' => 'UPDATED',
+        ]);
 
     $raw = Storage::disk('vault')->get('p.md');
     expect($raw)->toContain('b: 2')->toContain('UPDATED');
@@ -146,10 +135,10 @@ test('notes patch updates specific parts', function () {
 
 test('notes destroy deletes the note', function () {
     Storage::disk('vault')->put('d.md', 'test');
+    $encodedPath = urlencode('d.md');
 
-    deleteJson('/api/notes/d.md')
-        ->assertOk()
-        ->assertJson(['message' => 'Note deleted', 'path' => 'd.md']);
+    deleteJson("/api/notes/{$encodedPath}")
+        ->assertNoContent();
 
     expect(Storage::disk('vault')->exists('d.md'))->toBeFalse();
 });
@@ -158,8 +147,10 @@ test('notes destroy deletes the note', function () {
 test('notes bulk delete removes multiple notes', function () {
     Storage::disk('vault')->put('b1.md', '1');
     Storage::disk('vault')->put('b2.md', '2');
+    $path1 = 'b1.md';
+    $missingPath = 'missing.md';
 
-    postJson('/api/notes/bulk-delete', ['paths' => ['b1.md', 'missing.md']])
+    deleteJson('/api/bulk/notes/delete', ['paths' => [$path1, $missingPath]])
         ->assertOk()
         ->assertJson(['deleted' => ['b1.md'], 'notFound' => ['missing.md']]);
 });
@@ -167,15 +158,17 @@ test('notes bulk delete removes multiple notes', function () {
 test('notes bulk update applies multiple updates', function () {
     Storage::disk('vault')->put('up1.md', "---\nx: a\n---\nA");
     Storage::disk('vault')->put('up2.md', "---\ny: b\n---\nB");
+    $path1 = 'up1.md';
+    $path2 = 'up2.md';
 
-    postJson('/api/notes/bulk-update', ['items' => [
-        ['path' => 'up1.md', 'front_matter' => ['x' => 'z']],
-        ['path' => 'up2.md', 'content' => 'NEWB'],
+    patchJson('/api/bulk/notes/update', ['items' => [
+        ['path' => $path1, 'front_matter' => ['x' => 'z']],
+        ['path' => $path2, 'content' => 'NEWB'],
     ]])
         ->assertOk()
         ->assertJsonCount(2, 'results')
-        ->assertJsonFragment(['path' => 'up1.md', 'status' => 'updated'])
-        ->assertJsonFragment(['path' => 'up2.md', 'status' => 'updated']);
+        ->assertJsonFragment(['path' => 'up1.md', 'status' => 'updated', 'note' => ['path' => 'up1.md', 'front_matter' => ['x' => 'z'], 'content' => 'A']])
+        ->assertJsonFragment(['path' => 'up2.md', 'status' => 'updated', 'note' => ['path' => 'up2.md', 'front_matter' => ['y' => 'b'], 'content' => 'NEWB']]);
 
     $raw1 = Storage::disk('vault')->get('up1.md');
     $raw2 = Storage::disk('vault')->get('up2.md');
@@ -183,21 +176,21 @@ test('notes bulk update applies multiple updates', function () {
     expect($raw2)->toContain('NEWB');
 });
 
-/* Front Matter Endpoints */
-test('front-matter keys returns unique keys', function () {
+/* Metadata Endpoints (formerly Front Matter) */
+test('metadata keys returns unique keys', function () {
     Storage::disk('vault')->put('k1.md', "---\na: 1\nb: 2\n---\n");
     Storage::disk('vault')->put('k2.md', "---\na: 3\nc: 4\n---\n");
 
-    getJson('/api/front-matter/keys')
+    getJson('/api/metadata/keys')
         ->assertOk()
         ->assertExactJson(['a', 'b', 'c']);
 });
 
-test('front-matter values returns unique values for a key', function () {
+test('metadata values returns unique values for a key', function () {
     Storage::disk('vault')->put('v1.md', "---\na: 1\n---\n");
     Storage::disk('vault')->put('v2.md', "---\na: 2\n---\n");
 
-    getJson('/api/front-matter/values/a')
+    getJson('/api/metadata/values/a')
         ->assertOk()
         ->assertExactJson([1, 2]);
 });

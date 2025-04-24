@@ -3,20 +3,8 @@ info:
   title: Obsidian Vault REST API
   version: 1.0.0
 servers:
-  - url: http://prj-obsidian-local-rest-api.test/api
+  - url: http://localhost/api
 paths:
-  /files/tree:
-    get:
-      summary: Get hierarchical tree of vault files and directories
-      responses:
-        '200':
-          description: Tree structure
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/TreeNode'
   /files:
     get:
       summary: List all files in the vault
@@ -29,16 +17,47 @@ paths:
                 type: array
                 items:
                   type: string
-  /files/raw:
+    post:
+      summary: Create a new file in the vault
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - path
+              properties:
+                path:
+                  type: string
+                type:
+                  type: string
+                  enum: [file, directory]
+                content:
+                  type: string
+      responses:
+        '201':
+          description: File created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '409':
+          description: File already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /files/{path}:
     get:
-      summary: Retrieve raw content of a file
+      summary: Get raw content of a file
       parameters:
-        - in: query
+        - in: path
           name: path
           schema:
             type: string
           required: true
-          description: Vault-relative path to file
+          description: URL-encoded vault-relative path to file
       responses:
         '200':
           description: Raw file content
@@ -46,6 +65,61 @@ paths:
             text/plain:
               schema:
                 type: string
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: Update file content
+      parameters:
+        - in: path
+          name: path
+          schema:
+            type: string
+          required: true
+          description: URL-encoded vault-relative path to file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  type: string
+      responses:
+        '200':
+          description: File updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: Delete a file
+      parameters:
+        - in: path
+          name: path
+          schema:
+            type: string
+          required: true
+          description: URL-encoded vault-relative path to file
+      responses:
+        '200':
+          description: File deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
         '404':
           description: File not found
           content:
@@ -78,36 +152,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
-  /notes/search:
-    get:
-      summary: Search notes by front matter
-      parameters:
-        - in: query
-          name: field
-          schema:
-            type: string
-          required: true
-        - in: query
-          name: value
-          schema:
-            type: string
-          required: true
-      responses:
-        '200':
-          description: Matching notes
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/NoteSummary'
-        '400':
-          description: Invalid parameters
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Note'
   /notes/{path}:
     get:
       summary: Retrieve a single note
@@ -117,6 +162,7 @@ paths:
           schema:
             type: string
           required: true
+          description: URL-encoded vault-relative path to note
       responses:
         '200':
           description: Note object
@@ -135,30 +181,35 @@ paths:
       parameters:
         - in: path
           name: path
-          schema: { type: string }
+          schema:
+            type: string
           required: true
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/NoteInput' }
+            schema:
+              $ref: '#/components/schemas/NoteInput'
       responses:
         '200':
           description: Note replaced
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/SuccessResponse' }
+              schema:
+                $ref: '#/components/schemas/Note'
         '404':
           description: Note not found
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     patch:
       summary: Update parts of a note
       parameters:
         - in: path
           name: path
-          schema: { type: string }
+          schema:
+            type: string
           required: true
       requestBody:
         content:
@@ -175,138 +226,180 @@ paths:
           description: Note updated
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/SuccessResponse' }
+              schema:
+                $ref: '#/components/schemas/Note'
         '404':
           description: Note not found
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     delete:
       summary: Delete a note
       parameters:
         - in: path
           name: path
-          schema: { type: string }
+          schema:
+            type: string
           required: true
       responses:
-        '200':
-          description: Note deleted
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/SuccessResponse' }
+        '204':
+          description: Note deleted (no content)
         '404':
           description: Note not found
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
-  /notes/bulk-delete:
-    post:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /bulk/notes/delete:
+    delete:
       summary: Delete multiple notes
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                paths:
-                  type: array
-                  items: { type: string }
+              $ref: '#/components/schemas/BulkDeleteInput'
       responses:
         '200':
           description: Bulk delete result
           content:
             application/json:
-              schema: { type: object }
-  /notes/bulk-update:
-    post:
+              schema:
+                $ref: '#/components/schemas/BulkDeleteResult'
+  /bulk/notes/update:
+    patch:
       summary: Update multiple notes
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                items:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/NoteUpdate'
+              $ref: '#/components/schemas/BulkUpdateInput'
       responses:
         '200':
           description: Bulk update result
           content:
             application/json:
-              schema: { type: object }
-  /front-matter/keys:
+              schema:
+                $ref: '#/components/schemas/BulkUpdateResult'
+  /metadata/keys:
     get:
-      summary: List all front matter keys
+      summary: List all front matter keys across notes
       responses:
         '200':
-          description: Keys list
+          description: Unique front matter keys
           content:
             application/json:
               schema:
                 type: array
-                items: { type: string }
-  /front-matter/values/{key}:
+                items:
+                  type: string
+  /metadata/values/{key}:
     get:
       summary: List unique values for a front matter key
       parameters:
         - in: path
           name: key
-          schema: { type: string }
+          schema:
+            type: string
           required: true
       responses:
         '200':
-          description: Values list
+          description: Unique values
           content:
             application/json:
               schema:
                 type: array
-                items: {}
+                items:
+                  oneOf:
+                    - type: string
+                    - type: number
 components:
   schemas:
-    TreeNode:
-      type: object
-      properties:
-        name: { type: string }
-        type: { type: string }
-        children:
-          type: array
-          items:
-            $ref: '#/components/schemas/TreeNode'
-    Note:
-      type: object
-      properties:
-        path: { type: string }
-        front_matter: { type: object }
-        content: { type: string }
-    NoteSummary:
-      type: object
-      properties:
-        path: { type: string }
-        front_matter: { type: object }
-    NoteInput:
-      type: object
-      required: [path]
-      properties:
-        path: { type: string }
-        front_matter: { type: object }
-        content: { type: string }
-    NoteUpdate:
-      type: object
-      required: [path]
-      properties:
-        path: { type: string }
-        front_matter: { type: object }
-        content: { type: string }
     SuccessResponse:
       type: object
       properties:
-        message: { type: string }
-        path: { type: string }
+        message:
+          type: string
+        path:
+          type: string
     ErrorResponse:
       type: object
       properties:
-        error: { type: string }
+        error:
+          type: string
+    Note:
+      type: object
+      properties:
+        path:
+          type: string
+        front_matter:
+          type: object
+        content:
+          type: string
+    NoteInput:
+      type: object
+      required:
+        - path
+      properties:
+        path:
+          type: string
+        front_matter:
+          type: object
+        content:
+          type: string
+    BulkDeleteInput:
+      type: object
+      required:
+        - paths
+      properties:
+        paths:
+          type: array
+          items:
+            type: string
+    BulkDeleteResult:
+      type: object
+      properties:
+        deleted:
+          type: array
+          items:
+            type: string
+        notFound:
+          type: array
+          items:
+            type: string
+    BulkUpdateInput:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NoteUpdate'
+    BulkUpdateResult:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+              status:
+                type: string
+              note:
+                $ref: '#/components/schemas/Note'
+    NoteUpdate:
+      type: object
+      required:
+        - path
+      properties:
+        path:
+          type: string
+        front_matter:
+          type: object
+        content:
+          type: string

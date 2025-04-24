@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\Yaml\Yaml;
 
-class FrontMatterController extends Controller
+class MetadataController extends Controller
 {
     /**
      * Parse the YAML front matter from raw note content.

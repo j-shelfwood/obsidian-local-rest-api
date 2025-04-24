@@ -34,22 +34,3 @@ Run the test suite:
 ```bash
 php artisan test
 ```
-
-## API Endpoints
-
-| Method | Endpoint                       | Description                                                            |
-| ------ | ------------------------------ | ---------------------------------------------------------------------- |
-| GET    | /api/files/tree                | Get hierarchical tree of vault files and directories                   |
-| GET    | /api/files                     | List all files in the vault                                            |
-| GET    | /api/files/raw                 | Retrieve raw content of a file (provide `path` query param)            |
-| GET    | /api/notes                     | List all markdown notes (.md) with parsed front matter                 |
-| GET    | /api/notes/{path}              | Retrieve a note's content and front matter                             |
-| GET    | /api/notes/search              | Search notes by front matter fields (`field`, `value` query params)    |
-| POST   | /api/notes                     | Create a new note with content and front matter                        |
-| PUT    | /api/notes/{path}              | Replace a note's content and front matter                              |
-| PATCH  | /api/notes/{path}              | Update specific parts of a note (content or front matter)              |
-| DELETE | /api/notes/{path}              | Delete a single note                                                   |
-| POST   | /api/notes/bulk-delete         | Delete multiple notes (provide `paths` array)                          |
-| POST   | /api/notes/bulk-update         | Bulk update notes (provide array of `path`, `content`, `front_matter`) |
-| GET    | /api/front-matter/keys         | List all front matter keys across notes                                |
-| GET    | /api/front-matter/values/{key} | List unique values for a front matter key                              |

@@ -2,7 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Http\Requests\BulkDeleteRequest;
+use App\Http\Requests\BulkUpdateRequest;
+use App\Http\Requests\NotePatchRequest;
+use App\Http\Requests\NoteStoreRequest;
+use App\Http\Requests\NoteUpdateRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\Yaml\Yaml;
 
@@ -13,10 +18,20 @@ class NoteController extends Controller
         $front = [];
         $content = $raw;
 
-        if (substr($raw, 0, 3) === '---') {
+        if (str_starts_with($raw, '---')) {
             $parts = explode('---', $raw, 3);
-            $front = Yaml::parse(trim($parts[1])) ?: [];
-            $content = ltrim($parts[2], "\r\n");
+            if (count($parts) === 3 && trim($parts[1]) !== '') {
+                try {
+                    $front = Yaml::parse(trim($parts[1])) ?: [];
+                } catch (\Symfony\Component\Yaml\Exception\ParseException $e) {
+                    // Handle or log parse error if necessary, default to empty
+                    $front = [];
+                }
+                $content = ltrim($parts[2], "\r\n");
+            } elseif (count($parts) >= 2) {
+                // Handle case where there might be frontmatter markers but no content or invalid structure
+                $content = ltrim(implode('---', array_slice($parts, 2)), "\r\n");
+            }
         }
 
         return ['front_matter' => $front, 'content' => $content];
@@ -24,14 +39,19 @@ class NoteController extends Controller
 
     protected function buildNote(array $front, string $content): string
     {
+        // Only add frontmatter block if there's actual frontmatter
+        if (empty($front)) {
+            return $content;
+        }
+
         $yaml = Yaml::dump($front);
 
         return "---\n{$yaml}---\n{$content}";
     }
 
-    public function index()
+    public function index(): JsonResponse
     {
-        $paths = Storage::disk('vault')->allFiles();
+        $paths = Storage::disk('vault')->files('.', true); // Recursive search
         $notes = [];
 
         foreach ($paths as $path) {
@@ -39,164 +59,158 @@ class NoteController extends Controller
                 continue;
             }
             $raw = Storage::disk('vault')->get($path);
-            extract($this->parseNote($raw));
-            $notes[] = ['path' => $path, 'front_matter' => $front_matter, 'content' => $content];
+            $data = $this->parseNote($raw);
+            $notes[] = ['path' => $path, 'front_matter' => $data['front_matter'], 'content' => $data['content']];
         }
 
         return response()->json($notes);
     }
 
-    public function search(Request $request)
+    public function show(string $path): JsonResponse
     {
-        $field = $request->query('field');
-        $value = $request->query('value');
-
-        if (! $field || ! $value) {
-            return response()->json(['error' => 'field and value query parameters are required'], 400);
-        }
-
-        $results = [];
-        foreach (Storage::disk('vault')->allFiles() as $path) {
-            if (! str_ends_with($path, '.md')) {
-                continue;
-            }
-            $raw = Storage::disk('vault')->get($path);
-            extract($this->parseNote($raw));
-
-            if (isset($front_matter[$field]) && (string) $front_matter[$field] === (string) $value) {
-                $results[] = ['path' => $path, 'front_matter' => $front_matter];
-            }
-        }
-
-        return response()->json($results);
-    }
-
-    public function show(string $path)
-    {
-        if (! Storage::disk('vault')->exists($path)) {
+        $decodedPath = urldecode($path);
+        if (! Storage::disk('vault')->exists($decodedPath)) {
             return response()->json(['error' => 'Note not found'], 404);
         }
 
-        $raw = Storage::disk('vault')->get($path);
-        extract($this->parseNote($raw));
+        $raw = Storage::disk('vault')->get($decodedPath);
+        $data = $this->parseNote($raw);
 
-        return response()->json(['path' => $path, 'front_matter' => $front_matter, 'content' => $content]);
+        return response()->json(['path' => $decodedPath, 'front_matter' => $data['front_matter'], 'content' => $data['content']]);
     }
 
-    public function store(Request $request)
+    public function store(NoteStoreRequest $request): JsonResponse
     {
-        $path = $request->input('path');
-        $front = $request->input('front_matter', []);
-        $content = $request->input('content', '');
+        $validated = $request->validated();
+        $path = $validated['path'];
+        $front = $validated['front_matter'] ?? [];
+        $content = $validated['content'] ?? '';
 
-        if (! $path) {
-            return response()->json(['error' => 'path is required'], 400);
-        }
-
+        // Ensure path ends with .md
         if (! str_ends_with($path, '.md')) {
             $path .= '.md';
         }
 
+        if (Storage::disk('vault')->exists($path)) {
+            return response()->json(['error' => 'Note already exists at this path'], 409);
+        }
+
         $raw = $this->buildNote($front, $content);
         Storage::disk('vault')->put($path, $raw);
 
-        return response()->json(['message' => 'Note created', 'path' => $path], 201);
+        $responseData = $this->parseNote($raw);
+        $responseData['path'] = $path;
+
+        return response()->json($responseData, 201);
     }
 
-    public function update(Request $request, string $path)
+    public function update(NoteUpdateRequest $request, string $path): JsonResponse
     {
-        if (! Storage::disk('vault')->exists($path)) {
+        $decodedPath = urldecode($path);
+        if (! Storage::disk('vault')->exists($decodedPath)) {
             return response()->json(['error' => 'Note not found'], 404);
         }
 
-        $front = $request->input('front_matter', []);
-        $content = $request->input('content', '');
+        $validated = $request->validated();
+        $front = $validated['front_matter'] ?? [];
+        $content = $validated['content'] ?? '';
         $raw = $this->buildNote($front, $content);
 
-        Storage::disk('vault')->put($path, $raw);
+        Storage::disk('vault')->put($decodedPath, $raw);
 
-        return response()->json(['message' => 'Note replaced', 'path' => $path]);
+        $responseData = $this->parseNote($raw);
+        $responseData['path'] = $decodedPath;
+
+        return response()->json($responseData);
     }
 
-    public function patch(Request $request, string $path)
+    public function patch(NotePatchRequest $request, string $path): JsonResponse
     {
-        if (! Storage::disk('vault')->exists($path)) {
+        $decodedPath = urldecode($path);
+        if (! Storage::disk('vault')->exists($decodedPath)) {
             return response()->json(['error' => 'Note not found'], 404);
         }
 
-        $raw = Storage::disk('vault')->get($path);
+        $raw = Storage::disk('vault')->get($decodedPath);
         $data = $this->parseNote($raw);
         $front = $data['front_matter'];
         $content = $data['content'];
 
-        if ($request->has('front_matter') && is_array($request->input('front_matter'))) {
-            $front = array_merge($front, $request->input('front_matter'));
+        $validated = $request->validated();
+
+        if (isset($validated['front_matter'])) {
+            $front = array_merge($front, $validated['front_matter']);
         }
 
-        if ($request->has('content')) {
-            $content = $request->input('content');
+        if (isset($validated['content'])) {
+            $content = $validated['content'];
         }
 
         $newRaw = $this->buildNote($front, $content);
-        Storage::disk('vault')->put($path, $newRaw);
+        Storage::disk('vault')->put($decodedPath, $newRaw);
 
-        return response()->json(['message' => 'Note updated', 'path' => $path]);
+        $responseData = $this->parseNote($newRaw);
+        $responseData['path'] = $decodedPath;
+
+        return response()->json($responseData);
     }
 
-    public function destroy(string $path)
+    public function destroy(string $path): JsonResponse
     {
-        if (! Storage::disk('vault')->exists($path)) {
+        $decodedPath = urldecode($path);
+        if (! Storage::disk('vault')->exists($decodedPath)) {
             return response()->json(['error' => 'Note not found'], 404);
         }
 
-        Storage::disk('vault')->delete($path);
+        Storage::disk('vault')->delete($decodedPath);
 
-        return response()->json(['message' => 'Note deleted', 'path' => $path]);
+        // Return 204 No Content on successful deletion
+        return response()->json(null, 204);
     }
 
-    public function bulkDelete(Request $request)
+    public function bulkDelete(BulkDeleteRequest $request): JsonResponse
     {
-        $paths = $request->input('paths', []);
-        if (! is_array($paths)) {
-            return response()->json(['error' => 'paths must be an array'], 400);
-        }
+        $validated = $request->validated();
+
+        $paths = $validated['paths'];
 
         $deleted = [];
         $notFound = [];
-        foreach ($paths as $p) {
-            if (Storage::disk('vault')->exists($p)) {
-                Storage::disk('vault')->delete($p);
-                $deleted[] = $p;
+        foreach ($paths as $path) {
+            $decodedPath = urldecode($path); // Keep urldecode for now, assuming test sends decoded
+            if (Storage::disk('vault')->exists($decodedPath)) {
+                Storage::disk('vault')->delete($decodedPath);
+                $deleted[] = $decodedPath;
             } else {
-                $notFound[] = $p;
+                $notFound[] = $decodedPath;
             }
         }
 
         return response()->json(compact('deleted', 'notFound'));
     }
 
-    public function bulkUpdate(Request $request)
+    public function bulkUpdate(BulkUpdateRequest $request): JsonResponse
     {
-        $items = $request->input('items', []);
-        if (! is_array($items)) {
-            return response()->json(['error' => 'items must be an array of objects'], 400);
-        }
+        $validated = $request->validated();
+
+        $items = $validated['items'];
 
         $results = [];
         foreach ($items as $item) {
-            $p = $item['path'] ?? null;
-            if (! $p || ! Storage::disk('vault')->exists($p)) {
-                $results[] = ['path' => $p, 'status' => 'not_found'];
+            $path = $item['path'];
+            $decodedPath = urldecode($path); // Keep urldecode for now
+            if (! Storage::disk('vault')->exists($decodedPath)) {
+                $results[] = ['path' => $decodedPath, 'status' => 'not_found'];
 
                 continue;
             }
 
-            $raw = Storage::disk('vault')->get($p);
+            $raw = Storage::disk('vault')->get($decodedPath);
             $data = $this->parseNote($raw);
             $front = $data['front_matter'];
             $content = $data['content'];
 
-            if (isset($item['front_matter']) && is_array($item['front_matter'])) {
+            if (isset($item['front_matter'])) {
                 $front = array_merge($front, $item['front_matter']);
             }
 
@@ -205,8 +219,11 @@ class NoteController extends Controller
             }
 
             $newRaw = $this->buildNote($front, $content);
-            Storage::disk('vault')->put($p, $newRaw);
-            $results[] = ['path' => $p, 'status' => 'updated'];
+            Storage::disk('vault')->put($decodedPath, $newRaw);
+
+            $responseData = $this->parseNote($newRaw);
+            $responseData['path'] = $decodedPath;
+            $results[] = ['path' => $decodedPath, 'status' => 'updated', 'note' => $responseData];
         }
 
         return response()->json(['results' => $results]);
