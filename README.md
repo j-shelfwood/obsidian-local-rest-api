@@ -1,6 +1,6 @@
 # Obsidian Vault REST API & n8n Community Node
 
-!(Banner)[./Banner.webp]
+![Package Banner](./Banner.webp)
 An API to interact with your Obsidian vault, plus an n8n community node for seamless automation workflows.
 
 ## Table of Contents
