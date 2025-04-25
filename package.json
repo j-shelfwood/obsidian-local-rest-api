@@ -1,5 +1,31 @@
 {
-    "private": true,
+    "name": "n8n-nodes-obsidian-vault-rest-api",
+    "version": "1.0.0",
+    "description": "n8n community node for Obsidian Vault REST API",
+    "private": false,
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist",
+        "src",
+        "openapi.yaml"
+    ],
+    "publishConfig": {
+        "access": "public"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/j-shelfwood/prj-obsidian-local-rest-api.git"
+    },
+    "keywords": [
+        "n8n",
+        "n8n-nodes",
+        "obsidian",
+        "community-node",
+        "openapi"
+    ],
+    "author": "j-shelfwood",
+    "license": "MIT",
     "type": "module",
     "scripts": {
         "build": "vite build",
