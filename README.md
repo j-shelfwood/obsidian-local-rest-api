@@ -1,6 +1,6 @@
 # Obsidian Vault REST API & n8n Community Node
 
-![Package Banner](./Banner.webp)
+![Package Banner](./https://raw.githubusercontent.com/j-shelfwood/prj-obsidian-local-rest-api/refs/heads/main/banner.webp)
 An API to interact with your Obsidian vault, plus an n8n community node for seamless automation workflows.
 
 ## Table of Contents
