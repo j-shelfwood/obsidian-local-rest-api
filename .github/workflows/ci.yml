@@ -30,7 +30,7 @@ jobs:
         run: php artisan key:generate
 
       - name: Run Pest Tests
-        run: php artisan test
+        run: php artisan test -v
 
   build:
     name: Build TypeScript
