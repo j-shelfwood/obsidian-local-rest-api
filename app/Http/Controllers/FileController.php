@@ -24,6 +24,7 @@ class FileController extends Controller
     public function index(): JsonResponse
     {
         $files = $this->vault->allFiles();
+
         return response()->json($files);
     }
 
@@ -110,6 +111,15 @@ class FileController extends Controller
             return response()->json(['error' => 'File not found'], 404);
         }
 
+        $absolutePath = $this->vault->path($decodedPath);
+
+        if (is_dir($absolutePath)) {
+            // Delete directory
+            \Illuminate\Support\Facades\Storage::disk('vault')->deleteDirectory($decodedPath);
+
+            return response()->json(['message' => 'Directory deleted successfully']);
+        }
+        // Delete file
         $this->vault->delete($decodedPath);
 
         return response()->json(['message' => 'File deleted successfully']);
