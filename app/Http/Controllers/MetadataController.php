@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\LocalVaultService;
 use Symfony\Component\Yaml\Yaml;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 class MetadataController extends Controller
 {

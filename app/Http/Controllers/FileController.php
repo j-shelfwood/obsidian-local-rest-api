@@ -24,7 +24,6 @@ class FileController extends Controller
     public function index(): JsonResponse
     {
         $files = $this->vault->allFiles();
-
         return response()->json($files);
     }
 
