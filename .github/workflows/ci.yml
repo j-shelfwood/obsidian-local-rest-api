@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     tags:
-      - 'v*.*.*' # Trigger workflow on version tags (e.g., v1.0.0, v1.2.3)
+      - "v*.*.*" # Trigger workflow on version tags (e.g., v1.0.0, v1.2.3)
   pull_request:
     branches: [main]
 
@@ -55,28 +55,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Bun (latest)
-        uses: oven-sh/setup-bun@v1
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: 20
 
       - name: Cache JS dependencies
         uses: actions/cache@v3
         with:
           path: node_modules
-          key: js-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          key: js-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
           restore-keys: js-${{ runner.os }}-
 
-      - name: Install dependencies (Bun)
-        run: bun install --frozen-lockfile
+      - name: Install dependencies (npm)
+        run: npm ci
 
       - name: Compile TypeScript
-        run: bun run tsc
+        run: npm run build
 
   publish:
     name: Publish to npm
     needs: build
-    # Only run this job if a version tag was pushed
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: macos-latest
     env:
@@ -85,15 +84,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Bun (latest)
-        uses: oven-sh/setup-bun@v1
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: 20
 
       - name: Configure npm authentication
         run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
 
-      - name: Publish to npm (Bun)
+      - name: Publish to npm
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: bun publish --access public
+        run: npm publish --access public

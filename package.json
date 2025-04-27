@@ -26,21 +26,16 @@
     ],
     "author": "j-shelfwood",
     "license": "MIT",
-    "type": "module",
     "scripts": {
-        "build": "vite build",
-        "dev": "vite"
+        "build": "tsc",
+        "dev": "tsc --watch"
     },
     "devDependencies": {
         "@devlikeapro/n8n-openapi-node": "^0.1.4",
-        "@tailwindcss/vite": "^4.0.0",
         "@types/node": "^22.15.2",
         "axios": "^1.8.2",
         "concurrently": "^9.0.1",
-        "laravel-vite-plugin": "^1.2.0",
-        "tailwindcss": "^4.0.0",
-        "typescript": "^5.8.3",
-        "vite": "^6.2.4"
+        "typescript": "^5.8.3"
     },
     "dependencies": {
         "n8n-workflow": "^1.82.0",
