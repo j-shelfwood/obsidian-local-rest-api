@@ -87,6 +87,9 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Configure npm authentication
+        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
+
       - name: Publish to npm (Bun)
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
