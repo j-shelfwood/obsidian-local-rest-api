@@ -18,7 +18,7 @@ class NoteController extends Controller
         $front = [];
         $content = $raw;
 
-        if (str_starts_with($raw, '---')) {
+        if (str($raw)->startsWith('---')) {
             $parts = explode('---', $raw, 3);
             if (count($parts) === 3 && trim($parts[1]) !== '') {
                 try {
@@ -51,24 +51,18 @@ class NoteController extends Controller
 
     public function index(): JsonResponse
     {
-        $paths = Storage::disk('vault')->files('.', true); // Recursive search
-        $notes = [];
-
-        foreach ($paths as $path) {
-            if (! str_ends_with($path, '.md')) {
-                continue;
-            }
-            $raw = Storage::disk('vault')->get($path);
-            $data = $this->parseNote($raw);
-            $notes[] = ['path' => $path, 'front_matter' => $data['front_matter'], 'content' => $data['content']];
-        }
+        $notes = collect(Storage::disk('vault')->files('.', true))
+            ->filter(fn ($path) => str($path)->endsWith('.md'))
+            ->map(fn ($path) => ['path' => $path] + $this->parseNote(Storage::disk('vault')->get($path)))
+            ->values()
+            ->all();
 
         return response()->json($notes);
     }
 
     public function show(string $path): JsonResponse
     {
-        $decodedPath = urldecode($path);
+        $decodedPath = str($path)->toString(); // preserve path
         if (! Storage::disk('vault')->exists($decodedPath)) {
             return response()->json(['error' => 'Note not found'], 404);
         }
@@ -174,19 +168,20 @@ class NoteController extends Controller
 
         $paths = $validated['paths'];
 
-        $deleted = [];
-        $notFound = [];
-        foreach ($paths as $path) {
-            $decodedPath = urldecode($path); // Keep urldecode for now, assuming test sends decoded
-            if (Storage::disk('vault')->exists($decodedPath)) {
-                Storage::disk('vault')->delete($decodedPath);
-                $deleted[] = $decodedPath;
-            } else {
-                $notFound[] = $decodedPath;
-            }
-        }
+        $results = collect($paths)
+            ->map(function ($path) {
+                $decoded = urldecode($path);
 
-        return response()->json(compact('deleted', 'notFound'));
+                return Storage::disk('vault')->exists($decoded)
+                    ? ['path' => $decoded, 'status' => 'deleted']
+                    : ['path' => $decoded, 'status' => 'not_found'];
+            })
+            ->partition(fn ($item) => $item['status'] === 'deleted');
+
+        return response()->json([
+            'deleted' => $results[0]->pluck('path')->values()->all(),
+            'notFound' => $results[1]->pluck('path')->values()->all(),
+        ]);
     }
 
     public function bulkUpdate(BulkUpdateRequest $request): JsonResponse
@@ -195,37 +190,22 @@ class NoteController extends Controller
 
         $items = $validated['items'];
 
-        $results = [];
-        foreach ($items as $item) {
-            $path = $item['path'];
-            $decodedPath = urldecode($path); // Keep urldecode for now
-            if (! Storage::disk('vault')->exists($decodedPath)) {
-                $results[] = ['path' => $decodedPath, 'status' => 'not_found'];
+        $results = collect($items)
+            ->map(function ($item) {
+                $decoded = urldecode($item['path']);
+                if (! Storage::disk('vault')->exists($decoded)) {
+                    return ['path' => $decoded, 'status' => 'not_found'];
+                }
+                $data = $this->parseNote(Storage::disk('vault')->get($decoded));
+                $front = array_merge($data['front_matter'], $item['front_matter'] ?? []);
+                $content = $item['content'] ?? $data['content'];
+                $raw = $this->buildNote($front, $content);
+                Storage::disk('vault')->put($decoded, $raw);
+                $note = $this->parseNote($raw) + ['path' => $decoded];
 
-                continue;
-            }
+                return ['path' => $decoded, 'status' => 'updated', 'note' => $note];
+            });
 
-            $raw = Storage::disk('vault')->get($decodedPath);
-            $data = $this->parseNote($raw);
-            $front = $data['front_matter'];
-            $content = $data['content'];
-
-            if (isset($item['front_matter'])) {
-                $front = array_merge($front, $item['front_matter']);
-            }
-
-            if (isset($item['content'])) {
-                $content = $item['content'];
-            }
-
-            $newRaw = $this->buildNote($front, $content);
-            Storage::disk('vault')->put($decodedPath, $newRaw);
-
-            $responseData = $this->parseNote($newRaw);
-            $responseData['path'] = $decodedPath;
-            $results[] = ['path' => $decodedPath, 'status' => 'updated', 'note' => $responseData];
-        }
-
-        return response()->json(['results' => $results]);
+        return response()->json(['results' => $results->values()->all()]);
     }
 }

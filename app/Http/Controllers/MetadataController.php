@@ -12,7 +12,7 @@ class MetadataController extends Controller
      */
     protected function parseFront(string $raw): array
     {
-        if (substr($raw, 0, 3) === '---') {
+        if (str($raw)->startsWith('---')) {
             $parts = explode('---', $raw, 3);
 
             return Yaml::parse(trim($parts[1])) ?: [];
@@ -26,18 +26,15 @@ class MetadataController extends Controller
      */
     public function keys()
     {
-        $keys = [];
-        foreach (Storage::disk('vault')->allFiles() as $path) {
-            if (! str_ends_with($path, '.md')) {
-                continue;
-            }
-            $raw = Storage::disk('vault')->get($path);
-            $front = $this->parseFront($raw);
-            $keys = array_merge($keys, array_keys($front));
-        }
-        $unique = array_unique($keys);
+        $unique = collect(Storage::disk('vault')->allFiles())
+            ->filter(fn ($path) => str($path)->endsWith('.md'))
+            ->map(fn ($path) => $this->parseFront(Storage::disk('vault')->get($path)))
+            ->flatMap(fn ($front) => array_keys($front))
+            ->unique()
+            ->values()
+            ->all();
 
-        return response()->json(array_values($unique));
+        return response()->json($unique);
     }
 
     /**
@@ -45,19 +42,15 @@ class MetadataController extends Controller
      */
     public function values(string $key)
     {
-        $values = [];
-        foreach (Storage::disk('vault')->allFiles() as $path) {
-            if (! str_ends_with($path, '.md')) {
-                continue;
-            }
-            $raw = Storage::disk('vault')->get($path);
-            $front = $this->parseFront($raw);
-            if (isset($front[$key])) {
-                $values[] = $front[$key];
-            }
-        }
-        $unique = array_unique($values);
+        $unique = collect(Storage::disk('vault')->allFiles())
+            ->filter(fn ($path) => str($path)->endsWith('.md'))
+            ->map(fn ($path) => $this->parseFront(Storage::disk('vault')->get($path)))
+            ->filter(fn ($front) => array_key_exists($key, $front))
+            ->map(fn ($front) => $front[$key])
+            ->unique()
+            ->values()
+            ->all();
 
-        return response()->json(array_values($unique));
+        return response()->json($unique);
     }
 }
