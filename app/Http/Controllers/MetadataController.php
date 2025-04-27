@@ -2,11 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\Storage;
+use App\Services\LocalVaultService;
 use Symfony\Component\Yaml\Yaml;
 
 class MetadataController extends Controller
 {
+    protected LocalVaultService $vault;
+
+    public function __construct(LocalVaultService $vault)
+    {
+        $this->vault = $vault;
+    }
+
     /**
      * Parse the YAML front matter from raw note content.
      */
@@ -26,9 +33,9 @@ class MetadataController extends Controller
      */
     public function keys()
     {
-        $unique = collect(Storage::disk('vault')->allFiles())
+        $unique = collect($this->vault->allFiles())
             ->filter(fn ($path) => str($path)->endsWith('.md'))
-            ->map(fn ($path) => $this->parseFront(Storage::disk('vault')->get($path)))
+            ->map(fn ($path) => $this->parseFront($this->vault->get($path)))
             ->flatMap(fn ($front) => array_keys($front))
             ->unique()
             ->values()
@@ -42,9 +49,9 @@ class MetadataController extends Controller
      */
     public function values(string $key)
     {
-        $unique = collect(Storage::disk('vault')->allFiles())
+        $unique = collect($this->vault->allFiles())
             ->filter(fn ($path) => str($path)->endsWith('.md'))
-            ->map(fn ($path) => $this->parseFront(Storage::disk('vault')->get($path)))
+            ->map(fn ($path) => $this->parseFront($this->vault->get($path)))
             ->filter(fn ($front) => array_key_exists($key, $front))
             ->map(fn ($front) => $front[$key])
             ->unique()
