@@ -45,5 +45,10 @@
     "dependencies": {
         "n8n-workflow": "^1.82.0",
         "yaml": "^2.7.1"
+    },
+    "n8n": {
+        "nodes": [
+            "dist/index.js"
+        ]
     }
 }
