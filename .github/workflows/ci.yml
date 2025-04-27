@@ -9,16 +9,24 @@ on:
 jobs:
   php-tests:
     name: Run PHP Tests
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+      - name: Install PHP via Homebrew
+        run: |
+          brew install php@8.2
+          echo "/opt/homebrew/opt/php@8.2/bin" >> $GITHUB_PATH
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v3
         with:
-          php-version: "8.2"
-          extensions: mbstring, sqlite, xml, ctype, json
+          path: ~/.composer/cache
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
 
       - name: Install PHP dependencies
         run: composer install --prefer-dist --no-progress --no-suggest
@@ -27,15 +35,36 @@ jobs:
         run: cp .env.example .env
 
       - name: Generate Application Key
-        run: php artisan key:generate
+        run: |
+          echo "APP_KEY=$(php artisan key:generate --show --no-interaction)" >> .env
 
-      - name: Run Pest Tests
-        run: php artisan test -v
+      - name: Setup Bun (latest)
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Cache JS dependencies
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: js-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: js-${{ runner.os }}-
+
+      - name: Install JS Dependencies (Bun)
+        run: bun install --frozen-lockfile
+
+      - name: Build Assets for PHP Tests
+        run: bun run build
+
+      - name: Run Feature Tests
+        run: php artisan test --testsuite=Feature -v
 
   build:
     name: Build TypeScript
     needs: php-tests
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -44,6 +73,13 @@ jobs:
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
+
+      - name: Cache JS dependencies
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: js-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: js-${{ runner.os }}-
 
       - name: Install dependencies (Bun)
         run: bun install --frozen-lockfile
@@ -55,7 +91,9 @@ jobs:
     name: Publish to npm
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
