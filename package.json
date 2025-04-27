@@ -47,6 +47,7 @@
         "yaml": "^2.7.1"
     },
     "n8n": {
+        "n8nNodesApiVersion": "1",
         "nodes": [
             "dist/index.js"
         ]
