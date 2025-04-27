@@ -40,24 +40,6 @@ jobs:
         run: |
           echo "APP_KEY=$(php artisan key:generate --show --no-interaction)" >> .env
 
-      - name: Setup Bun (latest)
-        uses: oven-sh/setup-bun@v1
-        with:
-          bun-version: latest
-
-      - name: Cache JS dependencies
-        uses: actions/cache@v3
-        with:
-          path: node_modules
-          key: js-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-          restore-keys: js-${{ runner.os }}-
-
-      - name: Install JS Dependencies (Bun)
-        run: bun install --frozen-lockfile
-
-      - name: Build Assets for PHP Tests
-        run: bun run build
-
       - name: Run Feature Tests
         run: php artisan test --testsuite=Feature -v
 
