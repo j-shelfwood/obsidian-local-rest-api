@@ -1,10 +1,8 @@
-name: CI & Publish
+name: CI
 
 on:
   push:
     branches: [main]
-    tags:
-      - "v*.*.*" # Trigger workflow on version tags (e.g., v1.0.0, v1.2.3)
   pull_request:
     branches: [main]
 
@@ -44,61 +42,5 @@ jobs:
         run: |
           echo "APP_KEY=$(php artisan key:generate --show --no-interaction)" >> .env
 
-      - name: Run Feature Tests
-        run: php artisan test --testsuite=Feature -v
-
-  build:
-    name: Build TypeScript
-    needs: php-tests
-    runs-on: macos-latest
-    env:
-      HOMEBREW_NO_AUTO_UPDATE: "1"
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Cache JS dependencies
-        uses: actions/cache@v3
-        with:
-          path: node_modules
-          key: js-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: js-${{ runner.os }}-
-
-      - name: Install dependencies (npm)
-        run: npm ci
-
-      - name: Compile TypeScript
-        run: npm run build
-
-  publish:
-    name: Publish to npm
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: macos-latest
-    env:
-      HOMEBREW_NO_AUTO_UPDATE: "1"
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Configure npm authentication
-        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
-
-      - name: Publish to npm
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --access public
+      - name: Run Pest Tests
+        run: vendor/bin/pest --verbose
