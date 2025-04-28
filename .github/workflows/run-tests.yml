@@ -1,4 +1,4 @@
-name: CI
+name: Run tests
 
 on:
   push:
@@ -43,4 +43,4 @@ jobs:
           echo "APP_KEY=$(php artisan key:generate --show --no-interaction)" >> .env
 
       - name: Run Pest Tests
-        run: vendor/bin/pest --verbose
+        run: php artisan test --parallel
