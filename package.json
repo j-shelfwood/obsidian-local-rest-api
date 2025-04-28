@@ -22,7 +22,8 @@
         "n8n-nodes",
         "obsidian",
         "community-node",
-        "openapi"
+        "openapi",
+        "n8n-community-node-package"
     ],
     "author": "j-shelfwood",
     "license": "MIT",
@@ -42,9 +43,10 @@
         "yaml": "^2.7.1"
     },
     "n8n": {
-        "n8nNodesApiVersion": "1",
+        "n8nNodesApiVersion": 1,
         "nodes": [
             "dist/index.js"
-        ]
+        ],
+        "credentials": []
     }
 }
