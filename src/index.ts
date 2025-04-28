@@ -1,29 +1,15 @@
-import fs from 'fs';
-import path from 'path';
-import yaml from 'yaml';
 import {
     INodeType,
     INodeTypeDescription,
     NodeConnectionType,
 } from 'n8n-workflow';
 import { N8NPropertiesBuilder, N8NPropertiesBuilderConfig } from '@devlikeapro/n8n-openapi-node';
+import * as openApiSpec from './openapi.json';
 
-// Load and parse OpenAPI spec
-const specPath = path.resolve(__dirname, '../openapi.yaml');
-const specContent = fs.readFileSync(specPath, 'utf8');
-const openApiSpec = yaml.parse(specContent);
-
-// Optional builder configuration
-const builderConfig: N8NPropertiesBuilderConfig = {
-    // no custom config needed for properties builder
-};
-
-// Build n8n properties from OpenAPI spec
+const builderConfig: N8NPropertiesBuilderConfig = {};
 const parser = new N8NPropertiesBuilder(openApiSpec, builderConfig);
 const properties = parser.build();
-console.log(`Loaded ${properties.length} operations`);
 
-// Export the node class
 export class ObsidianVaultRestApi implements INodeType {
     description: INodeTypeDescription = {
         displayName: 'Obsidian Vault REST API',

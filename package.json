@@ -1,6 +1,6 @@
 {
     "name": "n8n-nodes-obsidian-vault-rest-api",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "description": "n8n community node for Obsidian Vault REST API",
     "private": false,
     "main": "dist/index.js",
