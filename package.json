@@ -8,7 +8,7 @@
     "files": [
         "dist",
         "logo.svg",
-        "openapi.yaml"
+        "openapi.json"
     ],
     "publishConfig": {
         "access": "public"

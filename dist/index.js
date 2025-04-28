@@ -52,8 +52,8 @@ class ObsidianVaultRestApi {
             defaults: {
                 name: 'Obsidian Vault',
             },
-            inputs: ["main" /* NodeConnectionType.Main */],
-            outputs: ["main" /* NodeConnectionType.Main */],
+            inputs: ['main'],
+            outputs: ['main'],
             credentials: [
                 {
                     name: 'bearerAuth',

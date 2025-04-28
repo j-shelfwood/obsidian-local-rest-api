@@ -22,8 +22,8 @@ export class ObsidianVaultRestApi implements INodeType {
         defaults: {
             name: 'Obsidian Vault',
         },
-        inputs: [NodeConnectionType.Main],
-        outputs: [NodeConnectionType.Main],
+        inputs: ['main'],
+        outputs: ['main'],
         credentials: [
             {
                 name: 'bearerAuth',
