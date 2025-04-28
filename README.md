@@ -1,58 +1,19 @@
-# Obsidian Vault REST API & n8n Community Node
+# Obsidian Vault REST API
 
-![Package Banner](public/banner.webp)
-An API to interact with your Obsidian vault, plus an n8n community node for seamless automation workflows.
+A Laravel-based REST API to interact with your local Obsidian vault. Provides endpoints to list, create, edit, and delete files and notes, as well as access and manage front matter metadata.
 
 ## Table of Contents
 
 -   [Overview](#overview)
--   [n8n Community Node](#n8n-community-node)
-    -   [Installation](#installation)
-    -   [Credentials](#credentials)
-    -   [Usage](#usage)
 -   [API Usage](#api-usage)
 -   [Local Development](#local-development)
+-   [n8n Community Node](#n8n-community-node)
 -   [Contributing](#contributing)
 -   [License](#license)
 
 ## Overview
 
-This project provides:
-
--   A **Laravel-based** REST API to list, create, edit, and delete files/notes in your local Obsidian vault.
--   A **n8n Community Node** (`n8n-nodes-obsidian-vault-rest-api`) that uses the OpenAPI spec to expose these endpoints as n8n operations.
-
-## n8n Community Node
-
-### Installation
-
-In your n8n project or server environment, install the node from npm:
-
-```bash
-npm install n8n-nodes-obsidian-vault-rest-api
-```
-
-Restart n8n and you will see a new node:
-
--   **Display Name**: Obsidian Vault REST API
-
-### Credentials
-
-After installation, add a credential in n8n:
-
-1. Go to **Credentials** → **New Credential** → **Obsidian Vault REST API**.
-2. Fill in:
-    - **Host**: The base URL of your API (e.g. `http://localhost:8000`)
-    - **Access Token**: Your JWT bearer token
-3. Save.
-
-### Usage
-
-1. Drag the **Obsidian Vault REST API** node into your workflow.
-2. Select a **Resource** (Files, Notes, Metadata).
-3. Choose an **Operation** (e.g. List Notes, Create File).
-4. Provide any required parameters (path, front_matter, content).
-5. Execute the node to see live results.
+This project provides a REST API for managing your Obsidian vault using Laravel. It enables programmatic access to files and notes, supporting automation and integration scenarios.
 
 ## API Usage
 
@@ -100,17 +61,18 @@ Refer to the [OpenAPI spec](openapi.yaml) for full details.
 git clone https://github.com/j-shelfwood/prj-obsidian-local-rest-api.git
 cd prj-obsidian-local-rest-api
 composer install
-npm install
 cp .env.example .env
 php artisan key:generate
 php artisan serve  # starts API server on http://localhost:8000
-npm src/index.ts   # confirms n8n properties load
-npm tsc            # compile TypeScript node
 ```
+
+## n8n Community Node
+
+A dedicated n8n node is available for integrating this API into your n8n workflows. Find installation and usage instructions in the [n8n-nodes-obsidian-vault-rest-api repository](https://github.com/j-shelfwood/n8n-nodes-obsidian-vault-rest-api).
 
 ## Contributing
 
-Contributions welcome! Feel free to open issues or PRs.
+Contributions welcome. Open issues or PRs as needed.
 
 ## License
 
