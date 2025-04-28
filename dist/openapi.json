@@ -70,7 +70,9 @@
                         "description": "File created successfully",
                         "content": {
                             "application/json": {
-                                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
                             }
                         }
                     },
@@ -78,7 +80,9 @@
                         "description": "File already exists",
                         "content": {
                             "application/json": {
-                                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
                             }
                         }
                     }
@@ -107,14 +111,21 @@
                         "description": "Raw file content",
                         "content": {
                             "text/plain": { "schema": { "type": "string" } },
-                            "application/octet-stream": { "schema": { "type": "string", "format": "binary" } }
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
                         }
                     },
                     "404": {
                         "description": "File not found",
                         "content": {
                             "application/json": {
-                                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
                             }
                         }
                     }
@@ -155,7 +166,9 @@
                         "description": "File updated successfully",
                         "content": {
                             "application/json": {
-                                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+                                "schema": {
+                                    "$ref": "#/components/schemas/SuccessResponse"
+                                }
                             }
                         }
                     },
@@ -163,7 +176,9 @@
                         "description": "File not found",
                         "content": {
                             "application/json": {
-                                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
                             }
                         }
                     }
@@ -193,7 +208,9 @@
                         "description": "File not found",
                         "content": {
                             "application/json": {
-                                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
                             }
                         }
                     }
@@ -212,7 +229,9 @@
                             "application/json": {
                                 "schema": {
                                     "type": "array",
-                                    "items": { "$ref": "#/components/schemas/Note" }
+                                    "items": {
+                                        "$ref": "#/components/schemas/Note"
+                                    }
                                 }
                             }
                         }
@@ -227,7 +246,9 @@
                     "required": true,
                     "content": {
                         "application/json": {
-                            "schema": { "$ref": "#/components/schemas/NoteInput" }
+                            "schema": {
+                                "$ref": "#/components/schemas/NoteInput"
+                            }
                         }
                     }
                 },
@@ -236,7 +257,9 @@
                         "description": "Note created",
                         "content": {
                             "application/json": {
-                                "schema": { "$ref": "#/components/schemas/Note" }
+                                "schema": {
+                                    "$ref": "#/components/schemas/Note"
+                                }
                             }
                         }
                     }
@@ -265,7 +288,9 @@
                         "description": "Note object",
                         "content": {
                             "application/json": {
-                                "schema": { "$ref": "#/components/schemas/Note" }
+                                "schema": {
+                                    "$ref": "#/components/schemas/Note"
+                                }
                             }
                         }
                     },
@@ -273,7 +298,9 @@
                         "description": "Note not found",
                         "content": {
                             "application/json": {
-                                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
                             }
                         }
                     }
@@ -298,7 +325,9 @@
                     "required": true,
                     "content": {
                         "application/json": {
-                            "schema": { "$ref": "#/components/schemas/NoteInput" }
+                            "schema": {
+                                "$ref": "#/components/schemas/NoteInput"
+                            }
                         }
                     }
                 },
@@ -307,7 +336,9 @@
                         "description": "Note replaced",
                         "content": {
                             "application/json": {
-                                "schema": { "$ref": "#/components/schemas/Note" }
+                                "schema": {
+                                    "$ref": "#/components/schemas/Note"
+                                }
                             }
                         }
                     },
@@ -315,7 +346,9 @@
                         "description": "Note not found",
                         "content": {
                             "application/json": {
-                                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
                             }
                         }
                     }
@@ -354,7 +387,9 @@
                         "description": "Note updated",
                         "content": {
                             "application/json": {
-                                "schema": { "$ref": "#/components/schemas/Note" }
+                                "schema": {
+                                    "$ref": "#/components/schemas/Note"
+                                }
                             }
                         }
                     },
@@ -362,7 +397,9 @@
                         "description": "Note not found",
                         "content": {
                             "application/json": {
-                                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
                             }
                         }
                     }
@@ -391,7 +428,9 @@
                         "description": "Note not found",
                         "content": {
                             "application/json": {
-                                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
                             }
                         }
                     }
@@ -407,7 +446,9 @@
                     "required": true,
                     "content": {
                         "application/json": {
-                            "schema": { "$ref": "#/components/schemas/BulkDeleteInput" }
+                            "schema": {
+                                "$ref": "#/components/schemas/BulkDeleteInput"
+                            }
                         }
                     }
                 },
@@ -416,7 +457,9 @@
                         "description": "Bulk delete result",
                         "content": {
                             "application/json": {
-                                "schema": { "$ref": "#/components/schemas/BulkDeleteResult" }
+                                "schema": {
+                                    "$ref": "#/components/schemas/BulkDeleteResult"
+                                }
                             }
                         }
                     }
@@ -432,7 +475,9 @@
                     "required": true,
                     "content": {
                         "application/json": {
-                            "schema": { "$ref": "#/components/schemas/BulkUpdateInput" }
+                            "schema": {
+                                "$ref": "#/components/schemas/BulkUpdateInput"
+                            }
                         }
                     }
                 },
@@ -441,7 +486,9 @@
                         "description": "Bulk update result",
                         "content": {
                             "application/json": {
-                                "schema": { "$ref": "#/components/schemas/BulkUpdateResult" }
+                                "schema": {
+                                    "$ref": "#/components/schemas/BulkUpdateResult"
+                                }
                             }
                         }
                     }

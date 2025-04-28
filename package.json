@@ -1,13 +1,13 @@
 {
     "name": "n8n-nodes-obsidian-vault-rest-api",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "description": "n8n community node for Obsidian Vault REST API",
     "private": false,
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "files": [
         "dist",
-        "src",
+        "logo.svg",
         "openapi.yaml"
     ],
     "publishConfig": {
@@ -28,7 +28,7 @@
     "author": "j-shelfwood",
     "license": "MIT",
     "scripts": {
-        "build": "tsc",
+        "build": "tsc && cp src/openapi.json dist && cp logo.svg dist",
         "dev": "tsc --watch"
     },
     "devDependencies": {
@@ -47,6 +47,8 @@
         "nodes": [
             "dist/index.js"
         ],
-        "credentials": []
+        "credentials": [
+            "dist/credentials/BearerAuth.credentials.js"
+        ]
     }
 }
