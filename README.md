@@ -100,12 +100,12 @@ Refer to the [OpenAPI spec](openapi.yaml) for full details.
 git clone https://github.com/j-shelfwood/prj-obsidian-local-rest-api.git
 cd prj-obsidian-local-rest-api
 composer install
-yarn install  # or bun install
+npm install
 cp .env.example .env
 php artisan key:generate
 php artisan serve  # starts API server on http://localhost:8000
-bun src/index.ts   # confirms n8n properties load
-bun tsc            # compile TypeScript node
+npm src/index.ts   # confirms n8n properties load
+npm tsc            # compile TypeScript node
 ```
 
 ## Contributing
