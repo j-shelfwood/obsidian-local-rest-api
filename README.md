@@ -1,6 +1,11 @@
 # Obsidian Vault REST API
 
+![Banner](public/banner.webp)
 A Laravel-based REST API to interact with your local Obsidian vault. Provides endpoints to list, create, edit, and delete files and notes, as well as access and manage front matter metadata.
+
+## Prerequisites
+
+If you plan to integrate this API in an n8n workflow, install the community node [n8n-nodes-obsidian-vault-rest-api](https://github.com/j-shelfwood/n8n-nodes-obsidian-vault-rest-api) in your n8n instance. Ensure this API is running (e.g. at `http://localhost:8000`) before using that node.
 
 ## Table of Contents
 
@@ -68,7 +73,13 @@ php artisan serve  # starts API server on http://localhost:8000
 
 ## n8n Community Node
 
-A dedicated n8n node is available for integrating this API into your n8n workflows. Find installation and usage instructions in the [n8n-nodes-obsidian-vault-rest-api repository](https://github.com/j-shelfwood/n8n-nodes-obsidian-vault-rest-api).
+To automate and integrate this API within n8n, install the community node:
+
+```bash
+npm install n8n-nodes-obsidian-vault-rest-api
+```
+
+That node will send requests to your running API instance; follow its README for credential setup, resource/operation usage, and workflow examples.
 
 ## Contributing
 
