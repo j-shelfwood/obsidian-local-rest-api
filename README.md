@@ -63,8 +63,8 @@ Refer to the [OpenAPI spec](openapi.yaml) for full details.
 ## Local Development
 
 ```bash
-git clone https://github.com/j-shelfwood/prj-obsidian-local-rest-api.git
-cd prj-obsidian-local-rest-api
+git clone https://github.com/j-shelfwood/obsidian-local-rest-api.git
+cd obsidian-local-rest-api
 composer install
 cp .env.example .env
 php artisan key:generate
