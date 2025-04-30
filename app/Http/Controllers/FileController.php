@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Requests\FileStoreRequest;
 use App\Http\Requests\FileUpdateRequest;
 use App\Services\LocalVaultService;
+use App\Http\Resources\FileResource;
+use App\Http\Resources\PrimitiveResource;
+use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -21,17 +24,16 @@ class FileController extends Controller
     /**
      * Display a listing of the files.
      */
-    public function index(): JsonResponse
+    public function index(Request $request)
     {
         $files = $this->vault->allFiles();
-
-        return response()->json($files);
+        return FileResource::collection($files);
     }
 
     /**
      * Store a newly created file in storage.
      */
-    public function store(FileStoreRequest $request): JsonResponse
+    public function store(FileStoreRequest $request)
     {
         $validated = $request->validated();
         $path = $validated['path'];
@@ -39,39 +41,52 @@ class FileController extends Controller
 
         if ($type === 'directory') {
             if ($this->vault->exists($path)) {
-                return response()->json(['error' => 'Directory already exists'], 409);
+                return (new PrimitiveResource([
+                    'error' => 'Directory already exists',
+                ]))->response()->setStatusCode(409);
             }
             $this->vault->makeDirectory($path);
-
-            return response()->json(['message' => 'Directory created successfully', 'path' => $path], 201);
+            return (new PrimitiveResource([
+                'message' => 'Directory created successfully',
+                'path' => $path,
+            ]))->response()->setStatusCode(201);
         }
 
         $content = $validated['content'] ?? '';
 
         if ($this->vault->exists($path)) {
-            return response()->json(['error' => 'File already exists'], 409);
+            return (new PrimitiveResource([
+                'error' => 'File already exists',
+            ]))->response()->setStatusCode(409);
         }
 
         $this->vault->put($path, $content);
 
-        return response()->json(['message' => 'File created successfully', 'path' => $path], 201);
+        return (new PrimitiveResource([
+            'message' => 'File created successfully',
+            'path' => $path,
+        ]))->response()->setStatusCode(201);
     }
 
     /**
      * Display the specified file.
      */
-    public function show(string $path): Response|JsonResponse|StreamedResponse
+    public function show(Request $request, string $path)
     {
         $decodedPath = urldecode($path);
 
         if (! $this->vault->exists($decodedPath)) {
-            return response()->json(['error' => 'File not found'], 404);
+            return (new PrimitiveResource([
+                'error' => 'File not found',
+            ]))->response()->setStatusCode(404);
         }
 
         // If the path is a directory, treat as not found
         $absolutePath = $this->vault->path($decodedPath);
         if (is_dir($absolutePath)) {
-            return response()->json(['error' => 'File not found'], 404);
+            return (new PrimitiveResource([
+                'error' => 'File not found',
+            ]))->response()->setStatusCode(404);
         }
 
         $content = $this->vault->get($decodedPath);
@@ -85,30 +100,37 @@ class FileController extends Controller
     /**
      * Update the specified file in storage.
      */
-    public function update(FileUpdateRequest $request, string $path): JsonResponse
+    public function update(FileUpdateRequest $request, string $path)
     {
         $validated = $request->validated();
         $content = $validated['content'];
         $decodedPath = urldecode($path);
 
         if (! $this->vault->exists($decodedPath)) {
-            return response()->json(['error' => 'File not found'], 404);
+            return (new PrimitiveResource([
+                'error' => 'File not found',
+            ]))->response()->setStatusCode(404);
         }
 
         $this->vault->put($decodedPath, $content);
 
-        return response()->json(['message' => 'File updated successfully', 'path' => $decodedPath]);
+        return new PrimitiveResource([
+            'message' => 'File updated successfully',
+            'path' => $decodedPath,
+        ]);
     }
 
     /**
      * Remove the specified file from storage.
      */
-    public function destroy(string $path): JsonResponse
+    public function destroy(Request $request, string $path)
     {
         $decodedPath = urldecode($path);
 
         if (! $this->vault->exists($decodedPath)) {
-            return response()->json(['error' => 'File not found'], 404);
+            return (new PrimitiveResource([
+                'error' => 'File not found',
+            ]))->response()->setStatusCode(404);
         }
 
         $absolutePath = $this->vault->path($decodedPath);
@@ -117,11 +139,17 @@ class FileController extends Controller
             // Delete directory
             \Illuminate\Support\Facades\Storage::disk('vault')->deleteDirectory($decodedPath);
 
-            return response()->json(['message' => 'Directory deleted successfully']);
+            return new PrimitiveResource([
+                'message' => 'Directory deleted successfully',
+                'path' => $decodedPath,
+            ]);
         }
         // Delete file
         $this->vault->delete($decodedPath);
 
-        return response()->json(['message' => 'File deleted successfully']);
+        return new PrimitiveResource([
+            'message' => 'File deleted successfully',
+            'path' => $decodedPath,
+        ]);
     }
 }

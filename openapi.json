@@ -28,13 +28,16 @@
                 "summary": "List all files in the vault",
                 "responses": {
                     "200": {
-                        "description": "List of file paths",
+                        "description": "List of file paths (as strings) wrapped in a data key (Laravel Resource)",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "string"
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": { "type": "string" }
+                                        }
                                     }
                                 }
                             }
@@ -71,7 +74,16 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/SuccessResponse"
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "message": { "type": "string" },
+                                                "path": { "type": "string" }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -81,7 +93,15 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "error": { "type": "string" }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -167,7 +187,16 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/SuccessResponse"
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "message": { "type": "string" },
+                                                "path": { "type": "string" }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -177,7 +206,15 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "error": { "type": "string" }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -201,15 +238,39 @@
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "File deleted successfully"
+                    "200": {
+                        "description": "File deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "message": { "type": "string" },
+                                                "path": { "type": "string" }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     },
                     "404": {
                         "description": "File not found",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "error": { "type": "string" }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -224,13 +285,18 @@
                 "summary": "List all markdown notes with parsed front matter",
                 "responses": {
                     "200": {
-                        "description": "List of notes",
+                        "description": "List of notes (Laravel Resource)",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Note"
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Note"
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -258,7 +324,12 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Note"
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Note"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -285,11 +356,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Note object",
+                        "description": "Note object (Laravel Resource)",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Note"
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Note"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -299,7 +375,15 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "error": { "type": "string" }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -333,11 +417,16 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Note replaced",
+                        "description": "Note replaced (Laravel Resource)",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Note"
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Note"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -347,7 +436,15 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "error": { "type": "string" }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -384,11 +481,16 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Note updated",
+                        "description": "Note updated (Laravel Resource)",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Note"
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Note"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -398,7 +500,15 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "error": { "type": "string" }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -421,15 +531,39 @@
                     }
                 ],
                 "responses": {
-                    "204": {
-                        "description": "Note deleted (no content)"
+                    "200": {
+                        "description": "Note deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "message": { "type": "string" },
+                                                "path": { "type": "string" }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     },
                     "404": {
                         "description": "Note not found",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "error": { "type": "string" }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -454,11 +588,16 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Bulk delete result",
+                        "description": "Bulk delete result (Laravel Resource)",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/BulkDeleteResult"
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/BulkDeleteResult"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -483,11 +622,16 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Bulk update result",
+                        "description": "Bulk update result (Laravel Resource)",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/BulkUpdateResult"
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/BulkUpdateResult"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -502,12 +646,17 @@
                 "summary": "List all front matter keys across notes",
                 "responses": {
                     "200": {
-                        "description": "Unique front matter keys",
+                        "description": "Unique front matter keys (Laravel Resource)",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": { "type": "string" }
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": { "type": "string" }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -533,16 +682,21 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Unique values",
+                        "description": "Unique values (Laravel Resource)",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "oneOf": [
-                                            { "type": "string" },
-                                            { "type": "number" }
-                                        ]
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "oneOf": [
+                                                    { "type": "string" },
+                                                    { "type": "number" }
+                                                ]
+                                            }
+                                        }
                                     }
                                 }
                             }

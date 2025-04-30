@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\PrimitiveResource;
 use App\Services\LocalVaultService;
+use Illuminate\Http\Request;
 use Symfony\Component\Yaml\Yaml;
-use Illuminate\Http\Resources\Json\JsonResource;
 
 class MetadataController extends Controller
 {
@@ -32,7 +33,7 @@ class MetadataController extends Controller
     /**
      * Return all unique front matter keys across markdown notes.
      */
-    public function keys()
+    public function keys(Request $request)
     {
         $unique = collect($this->vault->allFiles())
             ->filter(fn ($path) => str($path)->endsWith('.md'))
@@ -42,13 +43,13 @@ class MetadataController extends Controller
             ->values()
             ->all();
 
-        return response()->json($unique);
+        return PrimitiveResource::collection($unique);
     }
 
     /**
      * Return all unique values for a given front matter key.
      */
-    public function values(string $key)
+    public function values(Request $request, string $key)
     {
         $unique = collect($this->vault->allFiles())
             ->filter(fn ($path) => str($path)->endsWith('.md'))
@@ -59,6 +60,6 @@ class MetadataController extends Controller
             ->values()
             ->all();
 
-        return response()->json($unique);
+        return PrimitiveResource::collection($unique);
     }
 }

@@ -19,7 +19,10 @@ describe('FileController', function () {
 
         getJson('/api/files')
             ->assertOk()
-            ->assertExactJson(['a.txt', 'b.md']);
+            ->assertExactJson([
+                'a.txt',
+                'b.md',
+            ]);
     });
 
     test('files raw returns plaintext content', function () {

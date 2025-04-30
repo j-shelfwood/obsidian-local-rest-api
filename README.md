@@ -45,7 +45,7 @@ Authorization: Bearer <JWT_TOKEN>
 
 ### Endpoints
 
--   **GET** `/files` - List vault files
+-   **GET** `/files` - List vault files (returns an array of objects: `[ { "path": "filename.md" }, ... ]`)
 -   **POST** `/files` - Create a file or directory
 -   **GET** `/files/{path}` - Download file content
 -   **PUT** `/files/{path}` - Update file
