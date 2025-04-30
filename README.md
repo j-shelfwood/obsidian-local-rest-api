@@ -28,7 +28,7 @@ This project provides a REST API for managing your Obsidian vault using Laravel.
 https://{host}/api
 ```
 
-Replace `{host}` with your environment or hostname.
+Replace `{host}` with your environment or hostname. **Do not** call `/api` directly; always use a resource endpoint such as `/api/files` or `/api/notes`.
 
 ### Authentication
 
@@ -37,6 +37,11 @@ All endpoints require a **Bearer** token in the `Authorization` header:
 ```
 Authorization: Bearer <JWT_TOKEN>
 ```
+
+### Troubleshooting
+
+-   If you get a 404 error with the message `The route api could not be found.`, make sure you are not requesting `/api` or `/api/api`. Only resource endpoints like `/api/files` or `/api/notes` are valid.
+-   If your vault appears empty or the API returns null, ensure `OBSIDIAN_VAULT_PATH` in your `.env` is an absolute path (not using `~`).
 
 ### Endpoints
 
@@ -68,6 +73,17 @@ cd obsidian-local-rest-api
 composer install
 cp .env.example .env
 php artisan key:generate
+```
+
+**Important:** In your `.env`, set `OBSIDIAN_VAULT_PATH` to the full absolute path to your vault directory. Do **not** use `~` for your home directory, as PHP does not expand it. For example:
+
+```
+OBSIDIAN_VAULT_PATH=/Users/your-username/Obsidian/TestVault
+```
+
+Then start the API server (or use [Laravel Valet](https://laravel.com/docs/11.x/valet)):
+
+```bash
 php artisan serve  # starts API server on http://localhost:8000
 ```
 
