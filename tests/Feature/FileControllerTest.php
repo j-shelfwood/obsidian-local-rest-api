@@ -19,22 +19,30 @@ describe('FileController', function () {
 
         getJson('/api/files')
             ->assertOk()
-            ->assertExactJson([
-                'a.txt',
-                'b.md',
-            ]);
+            ->assertJsonStructure([ // Changed from assertExactJson to assertJsonStructure
+                '*' => [             // Expect an array of objects
+                    'path',
+                    'size',
+                    'mime_type',
+                    'last_modified',
+                    'created_at',
+                ],
+            ])
+            ->assertJsonFragment(['path' => 'a.txt']) // Verify specific file paths are present
+            ->assertJsonFragment(['path' => 'b.md']);
     });
 
     test('files raw returns plaintext content', function () {
         Storage::disk('vault')->put('file.md', 'hello');
         $encodedPath = urlencode('file.md');
 
-        $response = get("/api/files/{$encodedPath}");
+        $response = getJson("/api/files/{$encodedPath}");
 
         $response->assertOk();
-        $contentType = $response->headers->get('Content-Type');
-        expect($contentType)->toBeIn(['text/plain; charset=UTF-8', 'application/octet-stream']);
-        $response->assertSeeText('hello');
+        $response->assertJson([
+            'path' => 'file.md',
+            'content' => 'hello',
+        ]);
     });
 
     test('files raw returns 404 if file not found', function () {

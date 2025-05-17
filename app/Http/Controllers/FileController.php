@@ -4,13 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\FileStoreRequest;
 use App\Http\Requests\FileUpdateRequest;
-use App\Services\LocalVaultService;
 use App\Http\Resources\FileResource;
 use App\Http\Resources\PrimitiveResource;
+use App\Services\LocalVaultService;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FileController extends Controller
 {
@@ -27,6 +25,7 @@ class FileController extends Controller
     public function index(Request $request)
     {
         $files = $this->vault->allFiles();
+
         return FileResource::collection($files);
     }
 
@@ -46,6 +45,7 @@ class FileController extends Controller
                 ]))->response()->setStatusCode(409);
             }
             $this->vault->makeDirectory($path);
+
             return (new PrimitiveResource([
                 'message' => 'Directory created successfully',
                 'path' => $path,
@@ -90,11 +90,14 @@ class FileController extends Controller
         }
 
         $content = $this->vault->get($decodedPath);
-        // Use mime_content_type with the absolute path
-        $mimeType = file_exists($absolutePath) ? mime_content_type($absolutePath) : null;
+        // $mimeType = file_exists($absolutePath) ? mime_content_type($absolutePath) : null; // Mime type can be added if needed
 
-        // Return raw content with appropriate mime type
-        return response($content, 200)->header('Content-Type', $mimeType ?: 'text/plain');
+        // Return JSON response
+        return new PrimitiveResource([
+            'path' => $decodedPath,
+            'content' => $content,
+            // 'mimeType' => $mimeType ?: 'text/plain', // Optionally include mimeType
+        ]);
     }
 
     /**
