@@ -52,4 +52,24 @@ class LocalVaultService
     {
         return $this->disk->path($path);
     }
+
+    public function isDirectory(string $path): bool
+    {
+        return is_dir($this->disk->path($path));
+    }
+
+    public function size(string $path): int
+    {
+        return $this->disk->size($path);
+    }
+
+    public function lastModified(string $path): int
+    {
+        return $this->disk->lastModified($path);
+    }
+
+    public function allDirectories(string $directory = '.'): array
+    {
+        return $this->disk->allDirectories($directory);
+    }
 }

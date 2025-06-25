@@ -10,6 +10,7 @@ use App\Http\Requests\NoteUpdateRequest;
 use App\Http\Resources\NoteResource;
 use App\Models\Note;
 use App\Services\LocalVaultService;
+use Illuminate\Http\Request;
 use Symfony\Component\Yaml\Yaml;
 
 class NoteController extends Controller
@@ -57,14 +58,27 @@ class NoteController extends Controller
         return "---\n{$yaml}---\n{$content}";
     }
 
-    public function index()
+    public function index(Request $request)
     {
+        $search = $request->get('search');
+
         $notes = collect($this->vault->files('.', true))
             ->filter(fn ($path) => str($path)->endsWith('.md'))
-            ->map(fn ($path) => Note::fromParsed($path, $this->parseNote($this->vault->get($path))))
-            ->values();
+            ->map(fn ($path) => Note::fromParsed($path, $this->parseNote($this->vault->get($path))));
 
-        return NoteResource::collection($notes);
+        // Apply search filter if provided
+        if ($search) {
+            $searchLower = strtolower($search);
+            $notes = $notes->filter(function ($note) use ($searchLower) {
+                return str_contains(strtolower($note->path), $searchLower)
+                    || str_contains(strtolower($note->content), $searchLower)
+                    || (! empty($note->front_matter['tags']) &&
+                        collect($note->front_matter['tags'])
+                            ->contains(fn ($tag) => str_contains(strtolower($tag), $searchLower)));
+            });
+        }
+
+        return NoteResource::collection($notes->values());
     }
 
     public function show(string $path)
@@ -94,6 +108,34 @@ class NoteController extends Controller
         $note = Note::fromParsed($path, $this->parseNote($raw));
 
         return (new NoteResource($note))->response()->setStatusCode(201);
+    }
+
+    /**
+     * Create or update a note (upsert operation)
+     */
+    public function upsert(Request $request)
+    {
+        $validated = $request->validate([
+            'path' => 'required|string',
+            'content' => 'string',
+            'front_matter' => 'array',
+        ]);
+
+        $path = $validated['path'];
+        if (! str($path)->endsWith('.md')) {
+            $path .= '.md';
+        }
+
+        $exists = $this->vault->exists($path);
+        $raw = $this->buildNote($validated['front_matter'] ?? [], $validated['content'] ?? '');
+        $this->vault->put($path, $raw);
+        $note = Note::fromParsed($path, $this->parseNote($raw));
+
+        $response = new NoteResource($note);
+
+        return $exists
+            ? $response  // 200 for update
+            : $response->response()->setStatusCode(201); // 201 for create
     }
 
     public function update(NoteUpdateRequest $request, string $path)

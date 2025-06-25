@@ -155,4 +155,52 @@ class FileController extends Controller
             'path' => $decodedPath,
         ]);
     }
+
+    /**
+     * Write file with different modes (overwrite, append, prepend)
+     */
+    public function write(Request $request)
+    {
+        $validated = $request->validate([
+            'path' => 'required|string',
+            'content' => 'required|string',
+            'mode' => 'string|in:overwrite,append,prepend',
+        ]);
+
+        $path = $validated['path'];
+        $content = $validated['content'];
+        $mode = $validated['mode'] ?? 'overwrite';
+
+        try {
+            $exists = $this->vault->exists($path);
+            $finalContent = $content;
+
+            if ($exists && $mode !== 'overwrite') {
+                $existingContent = $this->vault->get($path);
+
+                switch ($mode) {
+                    case 'append':
+                        $finalContent = $existingContent.$content;
+                        break;
+                    case 'prepend':
+                        $finalContent = $content.$existingContent;
+                        break;
+                }
+            }
+
+            $this->vault->put($path, $finalContent);
+
+            return new PrimitiveResource([
+                'message' => $exists ? "File updated successfully ($mode)" : 'File created successfully',
+                'path' => $path,
+                'mode' => $mode,
+                'size' => strlen($finalContent),
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to write file: '.$e->getMessage(),
+            ], 500);
+        }
+    }
 }
