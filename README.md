@@ -1,7 +1,48 @@
 # Obsidian Vault REST API
 
+> **🤖 AI-Agent Optimized** - Designed specifically for AI agents and automation tools like n8n, with intelligent endpoints that eliminate complex workflows.
+
 ![Banner](public/banner.webp)
-A Laravel-based REST API to interact with your local Obsidian vault. Provides endpoints to list, create, edit, and delete files and notes, as well as access and manage front matter metadata.
+
+A powerful Laravel-based REST API for your local Obsidian vault that provides both traditional CRUD operations and **AI-native endpoints** designed to reduce cognitive load for AI agents.
+
+## ✨ Key Features
+
+### 🧠 AI-Native Design
+- **One-Step Operations**: Upsert notes without existence checks
+- **Intelligent Search**: Multi-scope search with relevance scoring  
+- **Smart Discovery**: Find daily notes regardless of naming convention
+- **Pagination Built-In**: Prevents context overflow for AI agents
+- **Human-Like Queries**: Natural language-style endpoints
+
+### 🔧 Traditional Features  
+- Full CRUD operations for files and notes
+- Frontmatter support with YAML parsing
+- Bulk operations for efficiency
+- OpenAPI specification for easy integration
+
+## 🚀 Quick Examples
+
+```bash
+# AI-Native: Create or update note (no existence check needed)
+POST /api/notes/upsert
+{"path": "daily-log", "content": "Today's tasks", "front_matter": {"tags": ["work"]}}
+
+# AI-Native: Smart search across content, filenames, and tags  
+GET /api/vault/search?query=project&scope[]=content&scope[]=tags
+
+# AI-Native: Find today's daily note automatically
+GET /api/vault/notes/daily?date=today
+
+# AI-Native: Append to file without reading first
+POST /api/files/write
+{"path": "log.md", "content": "New entry\n", "mode": "append"}
+```
+
+## 📖 Documentation
+
+- **[AI-Native API Guide](AI_NATIVE_API.md)** - Complete guide to AI-optimized endpoints
+- **[OpenAPI Specification](openapi.yaml)** - Traditional REST API documentation
 
 ## Prerequisites
 
