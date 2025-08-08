@@ -180,10 +180,10 @@ class FileController extends Controller
 
                 switch ($mode) {
                     case 'append':
-                        $finalContent = $existingContent.$content;
+                        $finalContent = $existingContent.' '.$content;
                         break;
                     case 'prepend':
-                        $finalContent = $content.$existingContent;
+                        $finalContent = $content.' '.$existingContent;
                         break;
                 }
             }

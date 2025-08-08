@@ -72,4 +72,10 @@ class LocalVaultService
     {
         return $this->disk->allDirectories($directory);
     }
+
+    // Added: immediate subdirectories for a given directory
+    public function directories(string $directory = '.'): array
+    {
+        return $this->disk->directories($directory);
+    }
 }

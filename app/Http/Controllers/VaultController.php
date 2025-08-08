@@ -87,7 +87,8 @@ class VaultController extends Controller
     public function searchVault(Request $request)
     {
         $query = $request->get('query');
-        $scope = $request->get('scope', ['content', 'filename', 'tags']);
+        $scopeParam = $request->get('scope', 'content,filename,tags');
+        $scope = is_string($scopeParam) ? explode(',', $scopeParam) : $scopeParam;
         $pathFilter = $request->get('path_filter');
         $limit = $request->integer('limit', 20);
 
@@ -264,7 +265,8 @@ class VaultController extends Controller
     public function getRelatedNotes(Request $request, string $path)
     {
         $decodedPath = urldecode($path);
-        $on = $request->get('on', ['tags', 'links']);
+        $onParam = $request->get('on', 'tags,links');
+        $on = is_string($onParam) ? explode(',', $onParam) : $onParam;
         $limit = $request->integer('limit', 10);
 
         if (! $this->vault->exists($decodedPath)) {
@@ -363,6 +365,77 @@ class VaultController extends Controller
             'source_note' => $decodedPath,
             'criteria' => $on,
             'total_found' => $relatedNotes->count(),
+        ]);
+    }
+
+    // Added: Vault overview with README and two-level folder summary
+    public function getVaultOverview(Request $request)
+    {
+        // README content
+        $readmePath = 'README.md';
+        $readme = [
+            'exists' => $this->vault->exists($readmePath),
+            'path' => $readmePath,
+            'content' => null,
+        ];
+        if ($readme['exists']) {
+            try {
+                $readme['content'] = $this->vault->get($readmePath);
+            } catch (\Exception $e) {
+                $readme['content'] = null;
+            }
+        }
+
+        // Root-level markdown file count
+        $rootMdCount = collect($this->vault->files('.', false))
+            ->filter(fn ($p) => str($p)->endsWith('.md'))
+            ->count();
+
+        // First two layers of folders with markdown file counts
+        $level1Dirs = $this->vault->directories('.');
+        $folders = [];
+        $totalMd = $rootMdCount;
+        $level2Total = 0;
+
+        foreach ($level1Dirs as $dir) {
+            $level1Md = collect($this->vault->files($dir, false))
+                ->filter(fn ($p) => str($p)->endsWith('.md'))
+                ->count();
+
+            $subDirs = $this->vault->directories($dir);
+            $subfolderData = [];
+            foreach ($subDirs as $sub) {
+                $level2Md = collect($this->vault->files($sub, false))
+                    ->filter(fn ($p) => str($p)->endsWith('.md'))
+                    ->count();
+                $subfolderData[] = [
+                    'path' => $sub,
+                    'markdown_files' => $level2Md,
+                ];
+                $totalMd += $level2Md;
+                $level2Total++;
+            }
+
+            $folders[] = [
+                'path' => $dir,
+                'markdown_files' => $level1Md,
+                'subfolders' => $subfolderData,
+            ];
+
+            $totalMd += $level1Md;
+        }
+
+        return new PrimitiveResource([
+            'readme' => $readme,
+            'root' => [
+                'markdown_files' => $rootMdCount,
+            ],
+            'folders' => $folders,
+            'summary' => [
+                'total_markdown_files_in_first_two_layers_plus_root' => $totalMd,
+                'total_level1_folders' => count($level1Dirs),
+                'total_level2_folders' => $level2Total,
+            ],
         ]);
     }
 }

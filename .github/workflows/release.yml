@@ -1,0 +1,57 @@
+name: Release and Propagate API Spec
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'routes/**'
+      - 'app/**'
+      - 'openapi.json'
+      - 'composer.lock'
+  workflow_dispatch:
+
+jobs:
+  propagate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+
+      - name: Validate OpenAPI presence
+        run: |
+          test -f openapi.json || (echo 'openapi.json missing' && exit 1)
+          cat openapi.json | jq . > /dev/null
+
+      - name: Upload artifact (openapi.json)
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi
+          path: openapi.json
+
+      - name: Prepare spec for consumers
+        id: prep
+        run: |
+          echo "spec_sha=$(sha256sum openapi.json | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+
+      - name: Dispatch to obsidian-local-rest-api-mcp
+        env:
+          GH_TOKEN: ${{ secrets.DISPATCH_PAT }}
+        run: |
+          gh api repos/j-shelfwood/obsidian-local-rest-api-mcp/dispatches \
+            -f event_type='api_spec_updated' \
+            -f client_payload='{"spec_repo":"j-shelfwood/obsidian-local-rest-api","spec_path":"openapi.json","spec_sha":"${{ steps.prep.outputs.spec_sha }}"}'
+
+      - name: Dispatch to n8n-nodes-obsidian-local-rest-api
+        env:
+          GH_TOKEN: ${{ secrets.DISPATCH_PAT }}
+        run: |
+          gh api repos/j-shelfwood/n8n-nodes-obsidian-local-rest-api/dispatches \
+            -f event_type='api_spec_updated' \
+            -f client_payload='{"spec_repo":"j-shelfwood/obsidian-local-rest-api","spec_path":"openapi.json","spec_sha":"${{ steps.prep.outputs.spec_sha }}"}'
