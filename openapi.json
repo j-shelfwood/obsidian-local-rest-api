@@ -1,1200 +1,2608 @@
 {
-    "openapi": "3.0.0",
-    "info": {
-        "title": "Obsidian Vault REST API",
-        "version": "1.0.0"
-    },
-    "servers": [
-        {
-            "url": "https://{host}/api",
-            "variables": {
-                "host": {
-                    "default": "localhost",
-                    "description": "Base hostname (change to 127.0.0.1, my-vm.local, etc.)"
-                }
-            }
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Obsidian Vault REST API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://{host}/api",
+      "variables": {
+        "host": {
+          "default": "localhost",
+          "description": "Base hostname (change to 127.0.0.1, my-vm.local, etc.)"
         }
-    ],
-    "security": [
-        {
-            "bearerAuth": []
-        }
-    ],
-    "paths": {
-        "/files": {
-            "get": {
-                "tags": ["Files"],
-                "operationId": "listFiles",
-                "summary": "List all files in the vault",
-                "responses": {
-                    "200": {
-                        "description": "List of file objects, each with path, last_modified, created_at, size, and mime_type",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "object",
-                                        "properties": {
-                                            "path": { "type": "string" },
-                                            "last_modified": {
-                                                "type": "string",
-                                                "format": "date-time"
-                                            },
-                                            "created_at": {
-                                                "type": "string",
-                                                "format": "date-time"
-                                            },
-                                            "size": { "type": "integer" },
-                                            "mime_type": {
-                                                "type": "string",
-                                                "nullable": true
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "tags": ["Files"],
-                "operationId": "createFile",
-                "summary": "Create a new file in the vault (legacy)",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object",
-                                "required": ["path"],
-                                "properties": {
-                                    "path": { "type": "string" },
-                                    "type": {
-                                        "type": "string",
-                                        "enum": ["file", "directory"]
-                                    },
-                                    "content": { "type": "string" }
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "File created successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/SuccessResponse"
-                                }
-                            }
-                        }
-                    },
-                    "409": {
-                        "description": "File already exists",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/files/write": {
-            "post": {
-                "tags": ["Files"],
-                "operationId": "writeFileSmart",
-                "summary": "Write a file with mode (overwrite, append, prepend)",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object",
-                                "required": ["path", "content"],
-                                "properties": {
-                                    "path": { "type": "string" },
-                                    "content": { "type": "string" },
-                                    "mode": {
-                                        "type": "string",
-                                        "enum": [
-                                            "overwrite",
-                                            "append",
-                                            "prepend"
-                                        ],
-                                        "default": "overwrite"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Write completed",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "message": { "type": "string" },
-                                        "path": { "type": "string" },
-                                        "mode": { "type": "string" },
-                                        "size": { "type": "integer" }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/files/{path}": {
-            "get": {
-                "tags": ["Files"],
-                "operationId": "getFile",
-                "summary": "Get raw content of a file",
-                "parameters": [
-                    {
-                        "in": "path",
-                        "name": "path",
-                        "schema": { "type": "string" },
-                        "style": "simple",
-                        "explode": false,
-                        "allowReserved": true,
-                        "required": true,
-                        "description": "URL-encoded vault-relative path to file"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Raw file content",
-                        "content": {
-                            "text/plain": { "schema": { "type": "string" } },
-                            "application/octet-stream": {
-                                "schema": {
-                                    "type": "string",
-                                    "format": "binary"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "File not found",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "put": {
-                "tags": ["Files"],
-                "operationId": "updateFile",
-                "summary": "Update file content (legacy)",
-                "parameters": [
-                    {
-                        "in": "path",
-                        "name": "path",
-                        "schema": { "type": "string" },
-                        "style": "simple",
-                        "explode": false,
-                        "allowReserved": true,
-                        "required": true
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object",
-                                "required": ["content"],
-                                "properties": {
-                                    "content": { "type": "string" }
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "File updated successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/SuccessResponse"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "File not found",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "tags": ["Files"],
-                "operationId": "deleteFile",
-                "summary": "Delete a file or directory",
-                "parameters": [
-                    {
-                        "in": "path",
-                        "name": "path",
-                        "schema": { "type": "string" },
-                        "style": "simple",
-                        "explode": false,
-                        "allowReserved": true,
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "File deleted successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/SuccessResponse"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "File not found",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-
-        "/notes": {
-            "get": {
-                "tags": ["Notes"],
-                "operationId": "listNotes",
-                "summary": "List all markdown notes with parsed front matter",
-                "responses": {
-                    "200": {
-                        "description": "List of notes (Laravel Resource)",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Note"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "tags": ["Notes"],
-                "operationId": "createNote",
-                "summary": "Create a new note (legacy)",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/NoteInput"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "Note created",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Note"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/notes/upsert": {
-            "post": {
-                "tags": ["Notes"],
-                "operationId": "upsertNote",
-                "summary": "Create or update a note intelligently",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object",
-                                "required": ["path"],
-                                "properties": {
-                                    "path": { "type": "string" },
-                                    "front_matter": {
-                                        "type": "object",
-                                        "additionalProperties": true
-                                    },
-                                    "content": { "type": "string" }
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Note upserted",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Note"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/notes/{path}": {
-            "get": {
-                "tags": ["Notes"],
-                "operationId": "getNote",
-                "summary": "Retrieve a single note",
-                "parameters": [
-                    {
-                        "in": "path",
-                        "name": "path",
-                        "schema": { "type": "string" },
-                        "style": "simple",
-                        "explode": false,
-                        "allowReserved": true,
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Note object",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Note"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Note not found",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "put": {
-                "tags": ["Notes"],
-                "operationId": "replaceNote",
-                "summary": "Replace a note (legacy)",
-                "parameters": [
-                    {
-                        "in": "path",
-                        "name": "path",
-                        "schema": { "type": "string" },
-                        "required": true
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/NoteInput"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Note replaced",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Note"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Note not found",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "tags": ["Notes"],
-                "operationId": "updateNote",
-                "summary": "Update parts of a note (legacy)",
-                "parameters": [
-                    {
-                        "in": "path",
-                        "name": "path",
-                        "schema": { "type": "string" },
-                        "required": true
-                    }
-                ],
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object",
-                                "properties": {
-                                    "front_matter": { "type": "object" },
-                                    "content": { "type": "string" }
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Note updated",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Note"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Note not found",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "tags": ["Notes"],
-                "operationId": "deleteNote",
-                "summary": "Delete a note",
-                "parameters": [
-                    {
-                        "in": "path",
-                        "name": "path",
-                        "schema": { "type": "string" },
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Note deleted",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/SuccessResponse"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Note not found",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-
-        "/bulk/notes/delete": {
-            "delete": {
-                "tags": ["Notes"],
-                "operationId": "bulkDeleteNotes",
-                "summary": "Delete multiple notes",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/BulkDeleteInput"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Bulk delete result",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/BulkDeleteResult"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/bulk/notes/update": {
-            "patch": {
-                "tags": ["Notes"],
-                "operationId": "bulkUpdateNotes",
-                "summary": "Update multiple notes",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/BulkUpdateInput"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Bulk update result",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/BulkUpdateResult"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-
-        "/metadata/keys": {
-            "get": {
-                "tags": ["Metadata"],
-                "operationId": "listMetadataKeys",
-                "summary": "List all front matter keys across notes",
-                "responses": {
-                    "200": {
-                        "description": "Unique keys",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "required": ["data"],
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": { "type": "string" }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "/metadata/values/{key}": {
-                "get": {
-                    "tags": ["Metadata"],
-                    "operationId": "listMetadataValues",
-                    "summary": "List unique values for a front matter key",
-                    "parameters": [
-                        {
-                            "in": "path",
-                            "name": "key",
-                            "schema": { "type": "string" },
-                            "required": true
-                        }
-                    ],
-                    "responses": {
-                        "200": {
-                            "description": "Unique values",
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "object",
-                                        "required": ["data"],
-                                        "properties": {
-                                            "data": {
-                                                "type": "array",
-                                                "items": {
-                                                    "oneOf": [
-                                                        { "type": "string" },
-                                                        { "type": "number" }
-                                                    ]
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "/vault/directory": {
-                    "get": {
-                        "tags": ["Vault"],
-                        "operationId": "listDirectory",
-                        "summary": "List directory contents with pagination",
-                        "parameters": [
-                            {
-                                "in": "query",
-                                "name": "path",
-                                "schema": { "type": "string", "default": "." }
-                            },
-                            {
-                                "in": "query",
-                                "name": "recursive",
-                                "schema": {
-                                    "type": "boolean",
-                                    "default": false
-                                }
-                            },
-                            {
-                                "in": "query",
-                                "name": "limit",
-                                "schema": { "type": "integer", "default": 50 }
-                            },
-                            {
-                                "in": "query",
-                                "name": "offset",
-                                "schema": { "type": "integer", "default": 0 }
-                            }
-                        ],
-                        "responses": {
-                            "200": {
-                                "description": "Directory listing",
-                                "content": {
-                                    "application/json": {
-                                        "schema": {
-                                            "type": "object",
-                                            "additionalProperties": true
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "/vault/search": {
-                    "get": {
-                        "tags": ["Vault"],
-                        "operationId": "searchVault",
-                        "summary": "Search vault content across content, filenames, and tags",
-                        "parameters": [
-                            {
-                                "in": "query",
-                                "name": "query",
-                                "schema": { "type": "string" },
-                                "required": true
-                            },
-                            {
-                                "in": "query",
-                                "name": "scope",
-                                "schema": {
-                                    "type": "string",
-                                    "description": "Comma-separated: content,filename,tags"
-                                }
-                            },
-                            {
-                                "in": "query",
-                                "name": "path_filter",
-                                "schema": { "type": "string" }
-                            }
-                        ],
-                        "responses": {
-                            "200": {
-                                "description": "Search results",
-                                "content": {
-                                    "application/json": {
-                                        "schema": {
-                                            "type": "object",
-                                            "additionalProperties": true
-                                        }
-                                    }
-                                }
-                            },
-                            "400": { "description": "Missing query" }
-                        }
-                    }
-                },
-                "/vault/notes/recent": {
-                    "get": {
-                        "tags": ["Vault"],
-                        "operationId": "getRecentNotes",
-                        "summary": "Get recently modified notes",
-                        "parameters": [
-                            {
-                                "in": "query",
-                                "name": "limit",
-                                "schema": { "type": "integer", "default": 5 }
-                            }
-                        ],
-                        "responses": {
-                            "200": {
-                                "description": "Recent notes",
-                                "content": {
-                                    "application/json": {
-                                        "schema": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/components/schemas/Note"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "/vault/notes/daily": {
-                    "get": {
-                        "tags": ["Vault"],
-                        "operationId": "getDailyNote",
-                        "summary": "Get daily note by date or shortcuts",
-                        "parameters": [
-                            {
-                                "in": "query",
-                                "name": "date",
-                                "schema": {
-                                    "type": "string",
-                                    "description": "today|yesterday|tomorrow|YYYY-MM-DD"
-                                }
-                            }
-                        ],
-                        "responses": {
-                            "200": {
-                                "description": "Daily note",
-                                "content": {
-                                    "application/json": {
-                                        "schema": {
-                                            "$ref": "#/components/schemas/Note"
-                                        }
-                                    }
-                                }
-                            },
-                            "404": { "description": "Not found" },
-                            "400": { "description": "Invalid date" }
-                        }
-                    }
-                },
-                "/vault/notes/related/{path}": {
-                    "get": {
-                        "tags": ["Vault"],
-                        "operationId": "getRelatedNotes",
-                        "summary": "Find related notes based on tags and links",
-                        "parameters": [
-                            {
-                                "in": "path",
-                                "name": "path",
-                                "schema": { "type": "string" },
-                                "required": true
-                            },
-                            {
-                                "in": "query",
-                                "name": "on",
-                                "schema": {
-                                    "type": "string",
-                                    "description": "Comma-separated: tags,links"
-                                }
-                            },
-                            {
-                                "in": "query",
-                                "name": "limit",
-                                "schema": { "type": "integer", "default": 10 }
-                            }
-                        ],
-                        "responses": {
-                            "200": {
-                                "description": "Related notes",
-                                "content": {
-                                    "application/json": {
-                                        "schema": {
-                                            "type": "object",
-                                            "additionalProperties": true
-                                        }
-                                    }
-                                }
-                            },
-                            "404": { "description": "Source note not found" }
-                        }
-                    }
-                },
-                "/vault/overview": {
-                    "get": {
-                        "tags": ["Vault"],
-                        "operationId": "getVaultOverview",
-                        "summary": "Vault overview including README and first two folder levels",
-                        "responses": {
-                            "200": {
-                                "description": "Overview",
-                                "content": {
-                                    "application/json": {
-                                        "schema": {
-                                            "type": "object",
-                                            "additionalProperties": true
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-
-                "/agent/grep": {
-                    "post": {
-                        "tags": ["Agent"],
-                        "operationId": "grepVault",
-                        "summary": "Search vault content with regex and patterns",
-                        "requestBody": {
-                            "required": true,
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "object",
-                                        "required": ["pattern"],
-                                        "properties": {
-                                            "pattern": { "type": "string" },
-                                            "is_regex": { "type": "boolean" },
-                                            "case_sensitive": {
-                                                "type": "boolean"
-                                            },
-                                            "include_frontmatter": {
-                                                "type": "boolean"
-                                            },
-                                            "file_pattern": {
-                                                "type": "string"
-                                            },
-                                            "max_results": {
-                                                "type": "integer"
-                                            },
-                                            "context_lines": {
-                                                "type": "integer"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "responses": {
-                            "200": {
-                                "description": "Search summary",
-                                "content": {
-                                    "application/json": {
-                                        "schema": {
-                                            "type": "object",
-                                            "additionalProperties": true
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "/agent/query-frontmatter": {
-                    "post": {
-                        "tags": ["Agent"],
-                        "operationId": "queryFrontmatter",
-                        "summary": "Query frontmatter fields across notes",
-                        "requestBody": {
-                            "required": false,
-                            "content": {
-                                "application/json": {
-                                    "schema": {
-                                        "type": "object",
-                                        "properties": {
-                                            "fields": {
-                                                "type": "array",
-                                                "items": { "type": "string" }
-                                            },
-                                            "where": {
-                                                "type": "object",
-                                                "additionalProperties": true
-                                            },
-                                            "sort_by": { "type": "string" },
-                                            "sort_direction": {
-                                                "type": "string",
-                                                "enum": ["asc", "desc"]
-                                            },
-                                            "limit": { "type": "integer" },
-                                            "distinct": { "type": "boolean" }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        "responses": {
-                            "200": {
-                                "description": "Query results",
-                                "content": {
-                                    "application/json": {
-                                        "schema": {
-                                            "type": "object",
-                                            "additionalProperties": true
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "/agent/backlinks/{note_path}": {
-                    "get": {
-                        "tags": ["Agent"],
-                        "operationId": "getBacklinks",
-                        "summary": "Find backlinks and mentions for a note",
-                        "parameters": [
-                            {
-                                "in": "path",
-                                "name": "note_path",
-                                "schema": { "type": "string" },
-                                "required": true
-                            },
-                            {
-                                "in": "query",
-                                "name": "include_mentions",
-                                "schema": { "type": "boolean", "default": true }
-                            },
-                            {
-                                "in": "query",
-                                "name": "include_tags",
-                                "schema": {
-                                    "type": "boolean",
-                                    "default": false
-                                }
-                            }
-                        ],
-                        "responses": {
-                            "200": {
-                                "description": "Backlink summary",
-                                "content": {
-                                    "application/json": {
-                                        "schema": {
-                                            "type": "object",
-                                            "additionalProperties": true
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "/agent/tags": {
-                    "get": {
-                        "tags": ["Agent"],
-                        "operationId": "getTags",
-                        "summary": "List tags across notes",
-                        "parameters": [
-                            {
-                                "in": "query",
-                                "name": "min_count",
-                                "schema": { "type": "integer", "default": 1 }
-                            },
-                            {
-                                "in": "query",
-                                "name": "include_nested",
-                                "schema": { "type": "boolean", "default": true }
-                            },
-                            {
-                                "in": "query",
-                                "name": "format",
-                                "schema": {
-                                    "type": "string",
-                                    "enum": ["flat", "hierarchical"],
-                                    "default": "flat"
-                                }
-                            }
-                        ],
-                        "responses": {
-                            "200": {
-                                "description": "Tags",
-                                "content": {
-                                    "application/json": {
-                                        "schema": {
-                                            "type": "object",
-                                            "additionalProperties": true
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "/agent/stats": {
-                    "get": {
-                        "tags": ["Agent"],
-                        "operationId": "getVaultStats",
-                        "summary": "Get vault statistics and health metrics",
-                        "responses": {
-                            "200": {
-                                "description": "Stats",
-                                "content": {
-                                    "application/json": {
-                                        "schema": {
-                                            "type": "object",
-                                            "additionalProperties": true
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "components": {
-                "securitySchemes": {
-                    "bearerAuth": {
-                        "type": "http",
-                        "scheme": "bearer",
-                        "bearerFormat": "JWT"
-                    }
-                },
-                "schemas": {
-                    "SuccessResponse": {
-                        "description": "Successful operation",
-                        "type": "object",
-                        "properties": {
-                            "message": { "type": "string" },
-                            "path": { "type": "string" }
-                        }
-                    },
-                    "ErrorResponse": {
-                        "description": "Error response",
-                        "type": "object",
-                        "properties": { "error": { "type": "string" } }
-                    },
-                    "Note": {
-                        "description": "A vault note",
-                        "type": "object",
-                        "properties": {
-                            "path": { "type": "string" },
-                            "front_matter": {
-                                "type": "object",
-                                "additionalProperties": true
-                            },
-                            "content": { "type": "string" }
-                        }
-                    },
-                    "NoteInput": {
-                        "description": "Input for creating or replacing a note",
-                        "type": "object",
-                        "required": ["path"],
-                        "properties": {
-                            "path": { "type": "string" },
-                            "front_matter": {
-                                "type": "object",
-                                "additionalProperties": true
-                            },
-                            "content": { "type": "string" }
-                        }
-                    },
-                    "NoteUpdate": {
-                        "description": "Partial update for a note",
-                        "type": "object",
-                        "required": ["path"],
-                        "properties": {
-                            "path": { "type": "string" },
-                            "front_matter": {
-                                "type": "object",
-                                "additionalProperties": true
-                            },
-                            "content": { "type": "string" }
-                        }
-                    },
-                    "BulkDeleteInput": {
-                        "description": "Input for deleting multiple notes",
-                        "type": "object",
-                        "required": ["paths"],
-                        "properties": {
-                            "paths": {
-                                "type": "array",
-                                "items": { "type": "string" }
-                            }
-                        }
-                    },
-                    "BulkDeleteResult": {
-                        "description": "Result of bulk delete",
-                        "type": "object",
-                        "properties": {
-                            "deleted": {
-                                "type": "array",
-                                "items": { "type": "string" }
-                            },
-                            "notFound": {
-                                "type": "array",
-                                "items": { "type": "string" }
-                            }
-                        }
-                    },
-                    "BulkUpdateInput": {
-                        "description": "Input for updating multiple notes",
-                        "type": "object",
-                        "required": ["items"],
-                        "properties": {
-                            "items": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "#/components/schemas/NoteUpdate"
-                                }
-                            }
-                        }
-                    },
-                    "BulkUpdateResult": {
-                        "description": "Result of bulk update",
-                        "type": "object",
-                        "properties": {
-                            "results": {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "path": { "type": "string" },
-                                        "status": { "type": "string" },
-                                        "note": {
-                                            "$ref": "#/components/schemas/Note"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+      }
     }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "SuccessResponse": {
+        "description": "Successful operation",
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "description": "Error response",
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "Note": {
+        "description": "A vault note",
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "front_matter": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "content": {
+            "type": "string"
+          }
+        }
+      },
+      "NoteInput": {
+        "description": "Input for creating or replacing a note",
+        "type": "object",
+        "required": [
+          "path"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "front_matter": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "content": {
+            "type": "string"
+          }
+        }
+      },
+      "NoteUpdate": {
+        "description": "Partial update for a note",
+        "type": "object",
+        "required": [
+          "path"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "front_matter": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "content": {
+            "type": "string"
+          }
+        }
+      },
+      "BulkDeleteInput": {
+        "description": "Input for deleting multiple notes",
+        "type": "object",
+        "required": [
+          "paths"
+        ],
+        "properties": {
+          "paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "BulkDeleteResult": {
+        "description": "Result of bulk delete",
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "notFound": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "BulkUpdateInput": {
+        "description": "Input for updating multiple notes",
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NoteUpdate"
+            }
+          }
+        }
+      },
+      "BulkUpdateResult": {
+        "description": "Result of bulk update",
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "note": {
+                  "$ref": "#/components/schemas/Note"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/files": {
+      "get": {
+        "tags": [
+          "Files"
+        ],
+        "operationId": "listFiles",
+        "summary": "List all files in the vault",
+        "responses": {
+          "200": {
+            "description": "List of file objects, each with path, last_modified, created_at, size, and mime_type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "path": {
+                        "type": "string"
+                      },
+                      "last_modified": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "size": {
+                        "type": "integer"
+                      },
+                      "mime_type": {
+                        "type": "string",
+                        "nullable": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Files"
+        ],
+        "operationId": "createFile",
+        "summary": "Create a new file in the vault (legacy)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "path"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "file",
+                      "directory"
+                    ]
+                  },
+                  "content": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "File created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "File already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/write": {
+      "post": {
+        "tags": [
+          "Files"
+        ],
+        "operationId": "writeFileSmart",
+        "summary": "Write a file with mode (overwrite, append, prepend)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "path",
+                  "content"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  },
+                  "content": {
+                    "type": "string"
+                  },
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "overwrite",
+                      "append",
+                      "prepend"
+                    ],
+                    "default": "overwrite"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Write completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "mode": {
+                      "type": "string"
+                    },
+                    "size": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files/{path}": {
+      "get": {
+        "tags": [
+          "Files"
+        ],
+        "operationId": "getFile",
+        "summary": "Get raw content of a file",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "path",
+            "schema": {
+              "type": "string"
+            },
+            "style": "simple",
+            "explode": false,
+            "allowReserved": true,
+            "required": true,
+            "description": "URL-encoded vault-relative path to file"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Raw file content",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "File not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Files"
+        ],
+        "operationId": "updateFile",
+        "summary": "Update file content (legacy)",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "path",
+            "schema": {
+              "type": "string"
+            },
+            "style": "simple",
+            "explode": false,
+            "allowReserved": true,
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "content"
+                ],
+                "properties": {
+                  "content": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "File updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "File not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Files"
+        ],
+        "operationId": "deleteFile",
+        "summary": "Delete a file or directory",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "path",
+            "schema": {
+              "type": "string"
+            },
+            "style": "simple",
+            "explode": false,
+            "allowReserved": true,
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "File not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notes": {
+      "get": {
+        "tags": [
+          "Notes"
+        ],
+        "operationId": "listNotes",
+        "summary": "List all markdown notes with parsed front matter",
+        "responses": {
+          "200": {
+            "description": "List of notes (Laravel Resource)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Note"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Notes"
+        ],
+        "operationId": "createNote",
+        "summary": "Create a new note (legacy)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Note created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Note"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notes/upsert": {
+      "post": {
+        "tags": [
+          "Notes"
+        ],
+        "operationId": "upsertNote",
+        "summary": "Create or update a note intelligently",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "path"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  },
+                  "front_matter": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "content": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Note upserted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Note"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notes/{path}": {
+      "get": {
+        "tags": [
+          "Notes"
+        ],
+        "operationId": "getNote",
+        "summary": "Retrieve a single note",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "path",
+            "schema": {
+              "type": "string"
+            },
+            "style": "simple",
+            "explode": false,
+            "allowReserved": true,
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Note object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Note"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Note not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Notes"
+        ],
+        "operationId": "replaceNote",
+        "summary": "Replace a note (legacy)",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Note replaced",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Note"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Note not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Notes"
+        ],
+        "operationId": "updateNote",
+        "summary": "Update parts of a note (legacy)",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "front_matter": {
+                    "type": "object"
+                  },
+                  "content": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Note updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Note"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Note not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Notes"
+        ],
+        "operationId": "deleteNote",
+        "summary": "Delete a note",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Note deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Note not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bulk/notes/delete": {
+      "delete": {
+        "tags": [
+          "Notes"
+        ],
+        "operationId": "bulkDeleteNotes",
+        "summary": "Delete multiple notes",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkDeleteInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bulk delete result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkDeleteResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bulk/notes/update": {
+      "patch": {
+        "tags": [
+          "Notes"
+        ],
+        "operationId": "bulkUpdateNotes",
+        "summary": "Update multiple notes",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkUpdateInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bulk update result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkUpdateResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metadata/keys": {
+      "get": {
+        "tags": [
+          "Metadata"
+        ],
+        "operationId": "listMetadataKeys",
+        "summary": "List all front matter keys across notes",
+        "responses": {
+          "200": {
+            "description": "Unique keys",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/metadata/values/{key}": {
+        "get": {
+          "tags": [
+            "Metadata"
+          ],
+          "operationId": "listMetadataValues",
+          "summary": "List unique values for a front matter key",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "key",
+              "schema": {
+                "type": "string"
+              },
+              "required": true
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Unique values",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "required": [
+                      "data"
+                    ],
+                    "properties": {
+                      "data": {
+                        "type": "array",
+                        "items": {
+                          "oneOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "/vault/directory": {
+          "get": {
+            "tags": [
+              "Vault"
+            ],
+            "operationId": "listDirectory",
+            "summary": "List directory contents with pagination",
+            "parameters": [
+              {
+                "in": "query",
+                "name": "path",
+                "schema": {
+                  "type": "string",
+                  "default": "."
+                }
+              },
+              {
+                "in": "query",
+                "name": "recursive",
+                "schema": {
+                  "type": "boolean",
+                  "default": false
+                }
+              },
+              {
+                "in": "query",
+                "name": "limit",
+                "schema": {
+                  "type": "integer",
+                  "default": 50
+                }
+              },
+              {
+                "in": "query",
+                "name": "offset",
+                "schema": {
+                  "type": "integer",
+                  "default": 0
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Directory listing",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "/vault/search": {
+          "get": {
+            "tags": [
+              "Vault"
+            ],
+            "operationId": "searchVault",
+            "summary": "Search vault content across content, filenames, and tags",
+            "parameters": [
+              {
+                "in": "query",
+                "name": "query",
+                "schema": {
+                  "type": "string"
+                },
+                "required": true
+              },
+              {
+                "in": "query",
+                "name": "scope",
+                "schema": {
+                  "type": "string",
+                  "description": "Comma-separated: content,filename,tags"
+                }
+              },
+              {
+                "in": "query",
+                "name": "path_filter",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Search results",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Missing query"
+              }
+            }
+          }
+        },
+        "/vault/notes/recent": {
+          "get": {
+            "tags": [
+              "Vault"
+            ],
+            "operationId": "getRecentNotes",
+            "summary": "Get recently modified notes",
+            "parameters": [
+              {
+                "in": "query",
+                "name": "limit",
+                "schema": {
+                  "type": "integer",
+                  "default": 5
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Recent notes",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Note"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "/vault/notes/daily": {
+          "get": {
+            "tags": [
+              "Vault"
+            ],
+            "operationId": "getDailyNote",
+            "summary": "Get daily note by date or shortcuts",
+            "parameters": [
+              {
+                "in": "query",
+                "name": "date",
+                "schema": {
+                  "type": "string",
+                  "description": "today|yesterday|tomorrow|YYYY-MM-DD"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Daily note",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Note"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Not found"
+              },
+              "400": {
+                "description": "Invalid date"
+              }
+            }
+          }
+        },
+        "/vault/notes/related/{path}": {
+          "get": {
+            "tags": [
+              "Vault"
+            ],
+            "operationId": "getRelatedNotes",
+            "summary": "Find related notes based on tags and links",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "path",
+                "schema": {
+                  "type": "string"
+                },
+                "required": true
+              },
+              {
+                "in": "query",
+                "name": "on",
+                "schema": {
+                  "type": "string",
+                  "description": "Comma-separated: tags,links"
+                }
+              },
+              {
+                "in": "query",
+                "name": "limit",
+                "schema": {
+                  "type": "integer",
+                  "default": 10
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Related notes",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Source note not found"
+              }
+            }
+          }
+        },
+        "/vault/overview": {
+          "get": {
+            "tags": [
+              "Vault"
+            ],
+            "operationId": "getVaultOverview",
+            "summary": "Vault overview including README and first two folder levels",
+            "responses": {
+              "200": {
+                "description": "Overview",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "/agent/grep": {
+          "post": {
+            "tags": [
+              "Agent"
+            ],
+            "operationId": "grepVault",
+            "summary": "Search vault content with regex and patterns",
+            "requestBody": {
+              "required": true,
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "required": [
+                      "pattern"
+                    ],
+                    "properties": {
+                      "pattern": {
+                        "type": "string"
+                      },
+                      "is_regex": {
+                        "type": "boolean"
+                      },
+                      "case_sensitive": {
+                        "type": "boolean"
+                      },
+                      "include_frontmatter": {
+                        "type": "boolean"
+                      },
+                      "file_pattern": {
+                        "type": "string"
+                      },
+                      "max_results": {
+                        "type": "integer"
+                      },
+                      "context_lines": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "responses": {
+              "200": {
+                "description": "Search summary",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "/agent/query-frontmatter": {
+          "post": {
+            "tags": [
+              "Agent"
+            ],
+            "operationId": "queryFrontmatter",
+            "summary": "Query frontmatter fields across notes",
+            "requestBody": {
+              "required": false,
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "fields": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "where": {
+                        "type": "object",
+                        "additionalProperties": true
+                      },
+                      "sort_by": {
+                        "type": "string"
+                      },
+                      "sort_direction": {
+                        "type": "string",
+                        "enum": [
+                          "asc",
+                          "desc"
+                        ]
+                      },
+                      "limit": {
+                        "type": "integer"
+                      },
+                      "distinct": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "responses": {
+              "200": {
+                "description": "Query results",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "/agent/backlinks/{note_path}": {
+          "get": {
+            "tags": [
+              "Agent"
+            ],
+            "operationId": "getBacklinks",
+            "summary": "Find backlinks and mentions for a note",
+            "parameters": [
+              {
+                "in": "path",
+                "name": "note_path",
+                "schema": {
+                  "type": "string"
+                },
+                "required": true
+              },
+              {
+                "in": "query",
+                "name": "include_mentions",
+                "schema": {
+                  "type": "boolean",
+                  "default": true
+                }
+              },
+              {
+                "in": "query",
+                "name": "include_tags",
+                "schema": {
+                  "type": "boolean",
+                  "default": false
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Backlink summary",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "/agent/tags": {
+          "get": {
+            "tags": [
+              "Agent"
+            ],
+            "operationId": "getTags",
+            "summary": "List tags across notes",
+            "parameters": [
+              {
+                "in": "query",
+                "name": "min_count",
+                "schema": {
+                  "type": "integer",
+                  "default": 1
+                }
+              },
+              {
+                "in": "query",
+                "name": "include_nested",
+                "schema": {
+                  "type": "boolean",
+                  "default": true
+                }
+              },
+              {
+                "in": "query",
+                "name": "format",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "flat",
+                    "hierarchical"
+                  ],
+                  "default": "flat"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Tags",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "/agent/stats": {
+          "get": {
+            "tags": [
+              "Agent"
+            ],
+            "operationId": "getVaultStats",
+            "summary": "Get vault statistics and health metrics",
+            "responses": {
+              "200": {
+                "description": "Stats",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "components": {
+        "securitySchemes": {
+          "bearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT"
+          }
+        },
+        "schemas": {
+          "SuccessResponse": {
+            "description": "Successful operation",
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              }
+            }
+          },
+          "ErrorResponse": {
+            "description": "Error response",
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "string"
+              }
+            }
+          },
+          "Note": {
+            "description": "A vault note",
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "front_matter": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "content": {
+                "type": "string"
+              }
+            }
+          },
+          "NoteInput": {
+            "description": "Input for creating or replacing a note",
+            "type": "object",
+            "required": [
+              "path"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "front_matter": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "content": {
+                "type": "string"
+              }
+            }
+          },
+          "NoteUpdate": {
+            "description": "Partial update for a note",
+            "type": "object",
+            "required": [
+              "path"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "front_matter": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "content": {
+                "type": "string"
+              }
+            }
+          },
+          "BulkDeleteInput": {
+            "description": "Input for deleting multiple notes",
+            "type": "object",
+            "required": [
+              "paths"
+            ],
+            "properties": {
+              "paths": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "BulkDeleteResult": {
+            "description": "Result of bulk delete",
+            "type": "object",
+            "properties": {
+              "deleted": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "notFound": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "BulkUpdateInput": {
+            "description": "Input for updating multiple notes",
+            "type": "object",
+            "required": [
+              "items"
+            ],
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/NoteUpdate"
+                }
+              }
+            }
+          },
+          "BulkUpdateResult": {
+            "description": "Result of bulk update",
+            "type": "object",
+            "properties": {
+              "results": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "note": {
+                      "$ref": "#/components/schemas/Note"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metadata/values/{key}": {
+      "get": {
+        "tags": [
+          "Metadata"
+        ],
+        "operationId": "listMetadataValues",
+        "summary": "List unique values for a front matter key",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unique values",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "oneOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/vault/directory": {
+        "get": {
+          "tags": [
+            "Vault"
+          ],
+          "operationId": "listDirectory",
+          "summary": "List directory contents with pagination",
+          "parameters": [
+            {
+              "in": "query",
+              "name": "path",
+              "schema": {
+                "type": "string",
+                "default": "."
+              }
+            },
+            {
+              "in": "query",
+              "name": "recursive",
+              "schema": {
+                "type": "boolean",
+                "default": false
+              }
+            },
+            {
+              "in": "query",
+              "name": "limit",
+              "schema": {
+                "type": "integer",
+                "default": 50
+              }
+            },
+            {
+              "in": "query",
+              "name": "offset",
+              "schema": {
+                "type": "integer",
+                "default": 0
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Directory listing",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/vault/search": {
+        "get": {
+          "tags": [
+            "Vault"
+          ],
+          "operationId": "searchVault",
+          "summary": "Search vault content across content, filenames, and tags",
+          "parameters": [
+            {
+              "in": "query",
+              "name": "query",
+              "schema": {
+                "type": "string"
+              },
+              "required": true
+            },
+            {
+              "in": "query",
+              "name": "scope",
+              "schema": {
+                "type": "string",
+                "description": "Comma-separated: content,filename,tags"
+              }
+            },
+            {
+              "in": "query",
+              "name": "path_filter",
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Search results",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Missing query"
+            }
+          }
+        }
+      },
+      "/vault/notes/recent": {
+        "get": {
+          "tags": [
+            "Vault"
+          ],
+          "operationId": "getRecentNotes",
+          "summary": "Get recently modified notes",
+          "parameters": [
+            {
+              "in": "query",
+              "name": "limit",
+              "schema": {
+                "type": "integer",
+                "default": 5
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Recent notes",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Note"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/vault/notes/daily": {
+        "get": {
+          "tags": [
+            "Vault"
+          ],
+          "operationId": "getDailyNote",
+          "summary": "Get daily note by date or shortcuts",
+          "parameters": [
+            {
+              "in": "query",
+              "name": "date",
+              "schema": {
+                "type": "string",
+                "description": "today|yesterday|tomorrow|YYYY-MM-DD"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Daily note",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Note"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Not found"
+            },
+            "400": {
+              "description": "Invalid date"
+            }
+          }
+        }
+      },
+      "/vault/notes/related/{path}": {
+        "get": {
+          "tags": [
+            "Vault"
+          ],
+          "operationId": "getRelatedNotes",
+          "summary": "Find related notes based on tags and links",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "path",
+              "schema": {
+                "type": "string"
+              },
+              "required": true
+            },
+            {
+              "in": "query",
+              "name": "on",
+              "schema": {
+                "type": "string",
+                "description": "Comma-separated: tags,links"
+              }
+            },
+            {
+              "in": "query",
+              "name": "limit",
+              "schema": {
+                "type": "integer",
+                "default": 10
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Related notes",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Source note not found"
+            }
+          }
+        }
+      },
+      "/vault/overview": {
+        "get": {
+          "tags": [
+            "Vault"
+          ],
+          "operationId": "getVaultOverview",
+          "summary": "Vault overview including README and first two folder levels",
+          "responses": {
+            "200": {
+              "description": "Overview",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/agent/grep": {
+        "post": {
+          "tags": [
+            "Agent"
+          ],
+          "operationId": "grepVault",
+          "summary": "Search vault content with regex and patterns",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "pattern"
+                  ],
+                  "properties": {
+                    "pattern": {
+                      "type": "string"
+                    },
+                    "is_regex": {
+                      "type": "boolean"
+                    },
+                    "case_sensitive": {
+                      "type": "boolean"
+                    },
+                    "include_frontmatter": {
+                      "type": "boolean"
+                    },
+                    "file_pattern": {
+                      "type": "string"
+                    },
+                    "max_results": {
+                      "type": "integer"
+                    },
+                    "context_lines": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Search summary",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/agent/query-frontmatter": {
+        "post": {
+          "tags": [
+            "Agent"
+          ],
+          "operationId": "queryFrontmatter",
+          "summary": "Query frontmatter fields across notes",
+          "requestBody": {
+            "required": false,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "fields": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "where": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "sort_by": {
+                      "type": "string"
+                    },
+                    "sort_direction": {
+                      "type": "string",
+                      "enum": [
+                        "asc",
+                        "desc"
+                      ]
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "distinct": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Query results",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/agent/backlinks/{note_path}": {
+        "get": {
+          "tags": [
+            "Agent"
+          ],
+          "operationId": "getBacklinks",
+          "summary": "Find backlinks and mentions for a note",
+          "parameters": [
+            {
+              "in": "path",
+              "name": "note_path",
+              "schema": {
+                "type": "string"
+              },
+              "required": true
+            },
+            {
+              "in": "query",
+              "name": "include_mentions",
+              "schema": {
+                "type": "boolean",
+                "default": true
+              }
+            },
+            {
+              "in": "query",
+              "name": "include_tags",
+              "schema": {
+                "type": "boolean",
+                "default": false
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Backlink summary",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/agent/tags": {
+        "get": {
+          "tags": [
+            "Agent"
+          ],
+          "operationId": "getTags",
+          "summary": "List tags across notes",
+          "parameters": [
+            {
+              "in": "query",
+              "name": "min_count",
+              "schema": {
+                "type": "integer",
+                "default": 1
+              }
+            },
+            {
+              "in": "query",
+              "name": "include_nested",
+              "schema": {
+                "type": "boolean",
+                "default": true
+              }
+            },
+            {
+              "in": "query",
+              "name": "format",
+              "schema": {
+                "type": "string",
+                "enum": [
+                  "flat",
+                  "hierarchical"
+                ],
+                "default": "flat"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Tags",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/agent/stats": {
+        "get": {
+          "tags": [
+            "Agent"
+          ],
+          "operationId": "getVaultStats",
+          "summary": "Get vault statistics and health metrics",
+          "responses": {
+            "200": {
+              "description": "Stats",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/directory": {
+      "get": {
+        "tags": [
+          "Vault"
+        ],
+        "operationId": "listDirectory",
+        "summary": "List directory contents with pagination",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "path",
+            "schema": {
+              "type": "string",
+              "default": "."
+            }
+          },
+          {
+            "in": "query",
+            "name": "recursive",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Directory listing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/search": {
+      "get": {
+        "tags": [
+          "Vault"
+        ],
+        "operationId": "searchVault",
+        "summary": "Search vault content across content, filenames, and tags",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "in": "query",
+            "name": "scope",
+            "schema": {
+              "type": "string",
+              "description": "Comma-separated: content,filename,tags"
+            }
+          },
+          {
+            "in": "query",
+            "name": "path_filter",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing query"
+          }
+        }
+      }
+    },
+    "/vault/notes/recent": {
+      "get": {
+        "tags": [
+          "Vault"
+        ],
+        "operationId": "getRecentNotes",
+        "summary": "Get recently modified notes",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 5
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recent notes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Note"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/notes/daily": {
+      "get": {
+        "tags": [
+          "Vault"
+        ],
+        "operationId": "getDailyNote",
+        "summary": "Get daily note by date or shortcuts",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "date",
+            "schema": {
+              "type": "string",
+              "description": "today|yesterday|tomorrow|YYYY-MM-DD"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daily note",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Note"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "400": {
+            "description": "Invalid date"
+          }
+        }
+      }
+    },
+    "/vault/notes/related/{path}": {
+      "get": {
+        "tags": [
+          "Vault"
+        ],
+        "operationId": "getRelatedNotes",
+        "summary": "Find related notes based on tags and links",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "in": "query",
+            "name": "on",
+            "schema": {
+              "type": "string",
+              "description": "Comma-separated: tags,links"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Related notes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source note not found"
+          }
+        }
+      }
+    },
+    "/vault/overview": {
+      "get": {
+        "tags": [
+          "Vault"
+        ],
+        "operationId": "getVaultOverview",
+        "summary": "Vault overview including README and first two folder levels",
+        "responses": {
+          "200": {
+            "description": "Overview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent/grep": {
+      "post": {
+        "tags": [
+          "Agent"
+        ],
+        "operationId": "grepVault",
+        "summary": "Search vault content with regex and patterns",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "pattern"
+                ],
+                "properties": {
+                  "pattern": {
+                    "type": "string"
+                  },
+                  "is_regex": {
+                    "type": "boolean"
+                  },
+                  "case_sensitive": {
+                    "type": "boolean"
+                  },
+                  "include_frontmatter": {
+                    "type": "boolean"
+                  },
+                  "file_pattern": {
+                    "type": "string"
+                  },
+                  "max_results": {
+                    "type": "integer"
+                  },
+                  "context_lines": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Search summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent/query-frontmatter": {
+      "post": {
+        "tags": [
+          "Agent"
+        ],
+        "operationId": "queryFrontmatter",
+        "summary": "Query frontmatter fields across notes",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fields": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "where": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "sort_by": {
+                    "type": "string"
+                  },
+                  "sort_direction": {
+                    "type": "string",
+                    "enum": [
+                      "asc",
+                      "desc"
+                    ]
+                  },
+                  "limit": {
+                    "type": "integer"
+                  },
+                  "distinct": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Query results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent/backlinks/{note_path}": {
+      "get": {
+        "tags": [
+          "Agent"
+        ],
+        "operationId": "getBacklinks",
+        "summary": "Find backlinks and mentions for a note",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "note_path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "in": "query",
+            "name": "include_mentions",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_tags",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Backlink summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent/tags": {
+      "get": {
+        "tags": [
+          "Agent"
+        ],
+        "operationId": "getTags",
+        "summary": "List tags across notes",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "min_count",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_nested",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "flat",
+                "hierarchical"
+              ],
+              "default": "flat"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tags",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent/stats": {
+      "get": {
+        "tags": [
+          "Agent"
+        ],
+        "operationId": "getVaultStats",
+        "summary": "Get vault statistics and health metrics",
+        "responses": {
+          "200": {
+            "description": "Stats",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }
