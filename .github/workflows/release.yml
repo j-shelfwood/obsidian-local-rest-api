@@ -40,18 +40,20 @@ jobs:
         run: |
           echo "spec_sha=$(sha256sum openapi.json | cut -d' ' -f1)" >> $GITHUB_OUTPUT
 
-      - name: Dispatch to obsidian-local-rest-api-mcp
+      - name: Dispatch to obsidian-local-rest-api-mcp (best-effort)
         env:
-          GH_TOKEN: ${{ secrets.DISPATCH_PAT }}
+          GH_TOKEN: ${{ github.token }}
+        continue-on-error: true
         run: |
           gh api repos/j-shelfwood/obsidian-local-rest-api-mcp/dispatches \
             -f event_type='api_spec_updated' \
-            -f client_payload='{"spec_repo":"j-shelfwood/obsidian-local-rest-api","spec_path":"openapi.json","spec_sha":"${{ steps.prep.outputs.spec_sha }}"}'
+            -f client_payload='{"spec_repo":"j-shelfwood/obsidian-local-rest-api","spec_path":"openapi.json","spec_sha":"${{ steps.prep.outputs.spec_sha }}"}' || echo 'dispatch to mcp skipped'
 
-      - name: Dispatch to n8n-nodes-obsidian-local-rest-api
+      - name: Dispatch to n8n-nodes-obsidian-local-rest-api (best-effort)
         env:
-          GH_TOKEN: ${{ secrets.DISPATCH_PAT }}
+          GH_TOKEN: ${{ github.token }}
+        continue-on-error: true
         run: |
           gh api repos/j-shelfwood/n8n-nodes-obsidian-local-rest-api/dispatches \
             -f event_type='api_spec_updated' \
-            -f client_payload='{"spec_repo":"j-shelfwood/obsidian-local-rest-api","spec_path":"openapi.json","spec_sha":"${{ steps.prep.outputs.spec_sha }}"}'
+            -f client_payload='{"spec_repo":"j-shelfwood/obsidian-local-rest-api","spec_path":"openapi.json","spec_sha":"${{ steps.prep.outputs.spec_sha }}"}' || echo 'dispatch to n8n skipped'
