@@ -15,7 +15,11 @@ $validator = null; // This global variable is no longer strictly necessary but c
 beforeEach(function () { // Removed: use (&$validator)
     Storage::fake('vault');
 
-    $openapiPath = '/Users/shelfwood/Projects/n8n-nodes-obsidian-local-rest-api/src/openapi.json';
+    $openapiPath = base_path('openapi.json');
+    if (! file_exists($openapiPath)) {
+        test()->fail("OpenAPI spec not found at: {$openapiPath}");
+    }
+
     $openapiContent = file_get_contents($openapiPath);
     $schemaData = json_decode($openapiContent, true);
 

@@ -2,12 +2,12 @@ name: Release and Propagate API Spec
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
-      - 'routes/**'
-      - 'app/**'
-      - 'openapi.json'
-      - 'composer.lock'
+      - "routes/**"
+      - "app/**"
+      - "openapi.json"
+      - "composer.lock"
   workflow_dispatch:
 
 jobs:
@@ -22,7 +22,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: "8.3"
 
       - name: Validate OpenAPI presence
         run: |
